@@ -21,7 +21,7 @@ export default function ShopPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <div className="mb-6 flex items-center gap-3 rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)' }}>
+      <div className="mb-6 flex items-center gap-3 rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)', boxShadow: 'var(--card-shadow)' }}>
         <Mascot mood="love" size={56} accessories={equippedCosmetics} />
         <div>
           <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Dein Guthaben</div>
@@ -39,7 +39,7 @@ export default function ShopPage() {
           const isDarkDone = item.id === 'theme-dark' && darkModeUnlocked
           const equipped = equippedCosmetics.includes(item.id)
           return (
-            <div key={item.id} className="flex flex-col gap-2 rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)' }}>
+            <div key={item.id} className="flex flex-col gap-2 rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)', boxShadow: 'var(--card-shadow)' }}>
               <div className="flex items-center gap-2">
                 <span className="text-2xl">{item.icon}</span>
                 <span className="font-extrabold">{item.title}</span>

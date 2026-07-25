@@ -33,7 +33,7 @@ export default function AchievementsPage() {
           const claimedLevel = claimed[ach.id] ?? 0
 
           return (
-            <div key={ach.id} className="flex items-center gap-4 rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)' }}>
+            <div key={ach.id} className="flex items-center gap-4 rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)', boxShadow: 'var(--card-shadow)' }}>
               <div
                 className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-2xl"
                 style={{ background: level > 0 ? '#facc1533' : 'var(--kb-key-bg)', filter: level > 0 ? 'none' : 'grayscale(0.6)' }}

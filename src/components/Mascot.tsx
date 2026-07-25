@@ -87,6 +87,9 @@ export default function Mascot({ mood = 'happy', size = 96, accessories = [], cl
       {accessories.includes('mascot-crown') && (
         <path d="M28 16 L34 28 L44 14 L50 28 L56 14 L66 28 L72 16 L70 32 L30 32 Z" fill="#facc15" stroke="#eab308" strokeWidth="1" />
       )}
+      {accessories.includes('mascot-bandana') && (
+        <path d="M30 62 Q50 72 70 62 L66 78 Q50 86 34 78 Z" fill="#f43f5e" stroke="#e11d48" strokeWidth="1" />
+      )}
     </svg>
   )
 }

@@ -23,7 +23,7 @@ export default function LessonPage() {
   const lessonProgress = useStore((s) => s.lessonProgress)
 
   const [result, setResult] = useState<LessonResult | null>(null)
-  const [reward, setReward] = useState<{ xpEarned: number; gemsEarned: number; crownUp: boolean; failed: boolean } | null>(null)
+  const [reward, setReward] = useState<{ xpEarned: number; gemsEarned: number; crownUp: boolean; precisionHearts: number } | null>(null)
 
   const text = useMemo(() => {
     if (!session) return ''
@@ -43,8 +43,6 @@ export default function LessonPage() {
 
   if (!session) return null
 
-  const costsHearts = session.kind === 'path'
-
   const handleFinish = (partial: Omit<LessonResult, 'lessonId'>) => {
     const full: LessonResult = { ...partial, lessonId: session.lessonId ?? session.kind }
 
@@ -58,7 +56,7 @@ export default function LessonPage() {
       if (partial.wpm >= 65 && partial.accuracy >= 95) suggestedUnit = 9
       applyPlacement(suggestedUnit)
       setResult(full)
-      setReward({ xpEarned: 0, gemsEarned: 25, crownUp: false, failed: false })
+      setReward({ xpEarned: 0, gemsEarned: 25, crownUp: false, precisionHearts: 5 })
       return
     }
 
@@ -69,7 +67,7 @@ export default function LessonPage() {
   }
 
   if (result && reward) {
-    const passed = session.kind === 'placement' || (!reward.failed && result.accuracy >= 70)
+    const passed = session.kind === 'placement' || result.accuracy >= 70
     const unit = session.lessonId ? lessonById(session.lessonId)?.unit : undefined
 
     return (
@@ -92,7 +90,7 @@ export default function LessonPage() {
         </div>
 
         {session.kind !== 'placement' && (
-          <div className="flex gap-4 text-lg font-bold">
+          <div className="flex flex-wrap items-center justify-center gap-4 text-lg font-bold">
             {reward.xpEarned > 0 && <span style={{ color: 'var(--primary)' }}>+{reward.xpEarned} EP</span>}
             {reward.gemsEarned > 0 && <span className="text-sky-500">+{reward.gemsEarned} 💎</span>}
             {reward.crownUp && <span className="text-amber-500">👑 Level up!</span>}
@@ -104,8 +102,19 @@ export default function LessonPage() {
           </div>
         )}
 
-        {reward.failed && (
-          <p style={{ color: 'var(--text-muted)' }}>Deine Herzen sind aufgebraucht. Übe im Practice Hub weiter oder warte, bis sie sich erholen.</p>
+        {session.kind !== 'placement' && (
+          <div className="flex items-center gap-1 rounded-full px-3 py-1.5" style={{ background: 'var(--kb-key-bg)' }}>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <span key={i} style={{ opacity: i < reward.precisionHearts ? 1 : 0.25 }}>❤️</span>
+            ))}
+            <span className="ml-2 text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>
+              {reward.precisionHearts === 5 ? 'Makellose Präzision!' : `Präzisions-Bonus: +${reward.precisionHearts} 💎`}
+            </span>
+          </div>
+        )}
+
+        {!passed && session.kind === 'path' && (
+          <p style={{ color: 'var(--text-muted)' }}>Fast geschafft – für die Krone brauchst du mindestens 70% Genauigkeit. Kein Stress, probier's einfach nochmal!</p>
         )}
 
         <div className="flex flex-wrap justify-center gap-3">
@@ -116,7 +125,7 @@ export default function LessonPage() {
           >
             {session.kind === 'placement' ? 'Zum Lernpfad' : 'Weiter'}
           </button>
-          {session.kind === 'path' && !reward.failed && (
+          {session.kind === 'path' && (
             <button
               onClick={() => { setResult(null); setReward(null) }}
               className="btn-press rounded-2xl border px-6 py-3 font-bold"
@@ -144,7 +153,6 @@ export default function LessonPage() {
       <TypingArea
         key={text}
         text={text}
-        costsHearts={costsHearts}
         onFinish={handleFinish}
         onAbort={() => { cancelSession(); setView('path') }}
       />
@@ -154,7 +162,7 @@ export default function LessonPage() {
 
 function Stat({ label, value, icon }: { label: string; value: string | number; icon: string }) {
   return (
-    <div className="pop-in flex flex-col items-center gap-1 rounded-2xl border p-3" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)' }}>
+    <div className="pop-in flex flex-col items-center gap-1 rounded-2xl border p-3" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)', boxShadow: 'var(--card-shadow)' }}>
       <span className="text-2xl">{icon}</span>
       <span className="text-xl font-extrabold">{value}</span>
       <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{label}</span>

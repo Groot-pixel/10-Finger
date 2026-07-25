@@ -26,7 +26,7 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <div className="mb-6 flex flex-col items-center gap-3 rounded-2xl border p-6 text-center" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)' }}>
+      <div className="mb-6 flex flex-col items-center gap-3 rounded-2xl border p-6 text-center" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)', boxShadow: 'var(--card-shadow)' }}>
         <Mascot mood="happy" size={100} accessories={equippedCosmetics} />
         <h1 className="text-xl font-extrabold">{name}</h1>
         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>🔥 {currentStreak} Tage Serie · Rekord {longestStreak}</p>
@@ -87,7 +87,7 @@ export default function ProfilePage() {
 
 function Stat({ icon, label, value }: { icon: string; label: string; value: string | number }) {
   return (
-    <div className="flex flex-col items-center gap-1 rounded-2xl border p-3 text-center" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)' }}>
+    <div className="flex flex-col items-center gap-1 rounded-2xl border p-3 text-center" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)', boxShadow: 'var(--card-shadow)' }}>
       <span className="text-xl">{icon}</span>
       <span className="text-lg font-extrabold">{value}</span>
       <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{label}</span>

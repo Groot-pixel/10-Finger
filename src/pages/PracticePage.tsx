@@ -38,7 +38,7 @@ export default function PracticePage() {
         <Mascot mood="neutral" size={56} />
         <div>
           <h1 className="text-xl font-extrabold">Practice Hub</h1>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Kostenloses Training – hier verlierst du keine Herzen.</p>
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Kostenloses Training – ganz ohne Druck, ganz ohne Grenzen.</p>
         </div>
       </div>
 
@@ -88,7 +88,7 @@ function Card({ icon, title, desc, onClick, color }: { icon: string; title: stri
     <button
       onClick={onClick}
       className="btn-press flex flex-col items-start gap-2 rounded-2xl border p-4 text-left transition-transform hover:-translate-y-0.5"
-      style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)' }}
+      style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)', boxShadow: 'var(--card-shadow)' }}
     >
       <span className="flex h-10 w-10 items-center justify-center rounded-full text-xl" style={{ background: `${color}22` }}>{icon}</span>
       <span className="font-extrabold">{title}</span>

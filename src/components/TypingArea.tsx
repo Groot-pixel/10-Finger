@@ -3,24 +3,23 @@ import Keyboard from './Keyboard'
 import FingerGuide from './FingerGuide'
 import { fingerFor } from '../data/keyboard'
 import { useSound } from '../hooks/useSound'
-import { useStore } from '../store/useStore'
 import type { LessonResult } from '../types'
 
 type CharStatus = 'pending' | 'correct' | 'incorrect' | 'current'
 
 interface Props {
   text: string
-  costsHearts: boolean
   onFinish: (result: Omit<LessonResult, 'lessonId'>) => void
   onAbort: () => void
 }
 
-export default function TypingArea({ text, costsHearts, onFinish, onAbort }: Props) {
+export default function TypingArea({ text, onFinish, onAbort }: Props) {
   const [index, setIndex] = useState(0)
   const [statuses, setStatuses] = useState<CharStatus[]>(() => Array(text.length).fill('pending'))
   const [combo, setCombo] = useState(0)
   const [shakeKey, setShakeKey] = useState(0)
   const [now, setNow] = useState(Date.now())
+  const [precisionHearts, setPrecisionHearts] = useState(5)
 
   const startTimeRef = useRef<number | null>(null)
   const mistakeCountRef = useRef(0)
@@ -34,8 +33,6 @@ export default function TypingArea({ text, costsHearts, onFinish, onAbort }: Pro
   const charRefs = useRef<(HTMLSpanElement | null)[]>([])
 
   const play = useSound()
-  const hearts = useStore((s) => s.hearts)
-  const loseHeart = useStore((s) => s.loseHeart)
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -94,13 +91,11 @@ export default function TypingArea({ text, costsHearts, onFinish, onAbort }: Pro
       setShakeKey((k) => k + 1)
       mistakeCountRef.current += 1
       errorsByCharRef.current[target] = (errorsByCharRef.current[target] ?? 0) + 1
-      if (costsHearts) {
-        mistakesSinceHeartLossRef.current += 1
-        if (mistakesSinceHeartLossRef.current >= 4) {
-          mistakesSinceHeartLossRef.current = 0
-          heartsLostRef.current += 1
-          loseHeart()
-        }
+      mistakesSinceHeartLossRef.current += 1
+      if (mistakesSinceHeartLossRef.current >= 4) {
+        mistakesSinceHeartLossRef.current = 0
+        heartsLostRef.current += 1
+        setPrecisionHearts((h) => Math.max(0, h - 1))
       }
     }
 
@@ -112,10 +107,8 @@ export default function TypingArea({ text, costsHearts, onFinish, onAbort }: Pro
 
     if (nextIndex >= text.length) {
       setTimeout(() => { play('complete'); finish() }, 50)
-    } else if (costsHearts && useStore.getState().hearts <= 0) {
-      setTimeout(() => { play('fail'); finish() }, 50)
     }
-  }, [index, text, play, costsHearts, loseHeart, finish])
+  }, [index, text, play, finish])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
@@ -145,13 +138,15 @@ export default function TypingArea({ text, costsHearts, onFinish, onAbort }: Pro
         <div className="h-3 flex-1 overflow-hidden rounded-full" style={{ background: 'var(--kb-key-bg)' }}>
           <div className="h-full rounded-full transition-all duration-200" style={{ width: `${progressPct}%`, background: 'var(--primary)' }} />
         </div>
-        {costsHearts && (
-          <div className="flex items-center gap-0.5 text-lg">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <span key={i}>{i < hearts ? '❤️' : '🖤'}</span>
-            ))}
-          </div>
-        )}
+        <div
+          className="flex items-center gap-0.5 rounded-full px-2 py-1 text-base"
+          style={{ background: 'var(--kb-key-bg)', boxShadow: 'var(--card-shadow)' }}
+          title="Präzisions-Bonus: bleibt erhalten, solange du wenig Fehler machst – kostet dich nie das Weiterlernen"
+        >
+          {Array.from({ length: 5 }).map((_, i) => (
+            <span key={i} style={{ opacity: i < precisionHearts ? 1 : 0.25 }}>❤️</span>
+          ))}
+        </div>
       </div>
 
       <div className="flex w-full items-center justify-center gap-6 text-sm font-semibold" style={{ color: 'var(--text-muted)' }}>

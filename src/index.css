@@ -14,6 +14,12 @@
   --kb-key-fg: #16241d;
   --kb-border: #dbe6dc;
   --kb-key-shadow: #c9d6cb;
+  --card-shadow: 0 1px 2px rgba(20, 40, 30, 0.04), 0 10px 24px -14px rgba(20, 40, 30, 0.18);
+  --card-shadow-hover: 0 4px 10px rgba(20, 40, 30, 0.06), 0 16px 32px -14px rgba(20, 40, 30, 0.22);
+  --blob-1: #22c55e;
+  --blob-2: #8b5cf6;
+  --blob-3: #0ea5e9;
+  --blob-opacity: 0.10;
   color-scheme: light;
 }
 
@@ -31,6 +37,12 @@
   --kb-key-fg: #eafbf1;
   --kb-border: #2c4237;
   --kb-key-shadow: #0c1712;
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 10px 28px -14px rgba(0, 0, 0, 0.55);
+  --card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.28), 0 18px 36px -14px rgba(0, 0, 0, 0.6);
+  --blob-1: #22c55e;
+  --blob-2: #a78bfa;
+  --blob-3: #38bdf8;
+  --blob-opacity: 0.16;
   color-scheme: dark;
 }
 
@@ -49,6 +61,39 @@ body {
   font-family: 'Segoe UI', ui-sans-serif, system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  position: relative;
+}
+
+/* Decorative ambient background so large empty areas don't feel flat/empty */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(600px circle at 8% 6%, color-mix(in srgb, var(--blob-1) calc(var(--blob-opacity) * 100%), transparent), transparent 60%),
+    radial-gradient(560px circle at 96% 18%, color-mix(in srgb, var(--blob-2) calc(var(--blob-opacity) * 100%), transparent), transparent 60%),
+    radial-gradient(680px circle at 90% 92%, color-mix(in srgb, var(--blob-3) calc(var(--blob-opacity) * 100%), transparent), transparent 60%),
+    radial-gradient(520px circle at 4% 85%, color-mix(in srgb, var(--blob-1) calc(var(--blob-opacity) * 100%), transparent), transparent 60%),
+    radial-gradient(circle, color-mix(in srgb, var(--text) 6%, transparent) 1px, transparent 1.4px);
+  background-size: auto, auto, auto, auto, 26px 26px;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, repeat;
+}
+
+.icon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  box-shadow: var(--card-shadow);
+  flex-shrink: 0;
+}
+
+.card-surface {
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  box-shadow: var(--card-shadow);
 }
 
 ::selection {

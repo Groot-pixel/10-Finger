@@ -7,9 +7,6 @@ import { getWeekStartISO, computeLeagueBoard } from '../data/league'
 import { mulberry32, seedFromString } from '../data/content'
 import type { LessonProgress, KeyStat, LessonResult, ViewKind, ActiveSession, ToastMsg, LeagueResultBanner } from '../types'
 
-const MAX_HEARTS = 5
-const HEART_REGEN_MS = 4 * 60 * 60 * 1000 // 1 heart every 4h
-
 function todayISO(d: Date = new Date()): string {
   return d.toISOString().slice(0, 10)
 }
@@ -30,9 +27,6 @@ interface State {
   // core currencies
   totalXP: number
   gems: number
-  hearts: number
-  maxHearts: number
-  lastHeartLostAt: number | null
   xpBoostLessonsLeft: number
 
   // streak
@@ -95,10 +89,7 @@ interface State {
   startSpeedTest: (text: string) => void
   startPlacement: (text: string) => void
   cancelSession: () => void
-  completeLesson: (result: LessonResult) => { xpEarned: number; gemsEarned: number; crownUp: boolean; failed: boolean }
-  loseHeart: () => void
-  refillHeartsWithGems: () => boolean
-  regenHearts: () => void
+  completeLesson: (result: LessonResult) => { xpEarned: number; gemsEarned: number; crownUp: boolean; precisionHearts: number }
   buyItem: (itemId: string, price: number) => boolean
   equipCosmetic: (itemId: string) => void
   useStreakFreeze: () => void
@@ -134,9 +125,6 @@ export const useStore = create<State>()(
 
       totalXP: 0,
       gems: 50,
-      hearts: MAX_HEARTS,
-      maxHearts: MAX_HEARTS,
-      lastHeartLostAt: null,
       xpBoostLessonsLeft: 0,
 
       currentStreak: 0,
@@ -250,39 +238,9 @@ export const useStore = create<State>()(
       },
       dismissLeagueBanner: () => set({ leagueBanner: null }),
 
-      regenHearts: () => {
-        const s = get()
-        if (s.hearts >= s.maxHearts || !s.lastHeartLostAt) return
-        const elapsed = Date.now() - s.lastHeartLostAt
-        const regenCount = Math.floor(elapsed / HEART_REGEN_MS)
-        if (regenCount > 0) {
-          const newHearts = Math.min(s.maxHearts, s.hearts + regenCount)
-          set({ hearts: newHearts, lastHeartLostAt: newHearts >= s.maxHearts ? null : Date.now() - (elapsed % HEART_REGEN_MS) })
-        }
-      },
-
-      loseHeart: () => {
-        const s = get()
-        if (s.hearts <= 0) return
-        set({ hearts: s.hearts - 1, lastHeartLostAt: s.lastHeartLostAt ?? Date.now() })
-      },
-
-      refillHeartsWithGems: () => {
-        const s = get()
-        const price = 60
-        if (s.gems < price || s.hearts >= s.maxHearts) return false
-        set({ gems: s.gems - price, hearts: s.maxHearts, lastHeartLostAt: null })
-        return true
-      },
-
       buyItem: (itemId, price) => {
         const s = get()
         if (s.gems < price) return false
-        if (itemId === 'heart-refill') {
-          if (s.hearts >= s.maxHearts) return false
-          set({ gems: s.gems - price, hearts: s.maxHearts, lastHeartLostAt: null })
-          return true
-        }
         if (itemId === 'streak-freeze') {
           set({ gems: s.gems - price, streakFreezes: s.streakFreezes + 1 })
           return true
@@ -327,10 +285,11 @@ export const useStore = create<State>()(
         get().ensureDaily()
         get().ensureLeagueWeek()
 
-        const failed = result.heartsLost > 0 && get().hearts <= 0
+        const precisionHearts = Math.max(0, 5 - result.heartsLost)
         const xpBoostActive = s.xpBoostLessonsLeft > 0 && !result.isPractice
         const xpEarned = result.isPractice ? Math.max(3, Math.round(result.charsTyped / 8)) : computeXpForResult(result, xpBoostActive)
         let gemsEarned = 0
+        if (!result.isPractice && precisionHearts > 0) gemsEarned += precisionHearts
 
         // streak update (only for real practice sessions, once per day)
         const today = todayISO()
@@ -363,7 +322,7 @@ export const useStore = create<State>()(
         if (!result.isPractice && s.activeSession?.lessonId) {
           const lid = s.activeSession.lessonId
           const prev = progressMap[lid] ?? { crownLevel: 0, bestWpm: 0, bestAccuracy: 0, timesCompleted: 0 }
-          const passed = result.accuracy >= 70 && !failed
+          const passed = result.accuracy >= 70
           const newCrown = passed ? Math.min(5, prev.crownLevel + 1) : prev.crownLevel
           crownUp = newCrown > prev.crownLevel
           progressMap[lid] = {
@@ -399,8 +358,8 @@ export const useStore = create<State>()(
           }
         }
 
-        const checkpointsCleared = s.checkpointsCleared + (!result.isPractice && !failed && result.accuracy >= 70 && s.activeSession?.lessonId && lessonById(s.activeSession.lessonId)?.lesson.type === 'checkpoint' ? 1 : 0)
-          + (!result.isPractice && !failed && result.accuracy >= 70 && s.activeSession?.lessonId && lessonById(s.activeSession.lessonId)?.lesson.type === 'boss' ? 1 : 0)
+        const checkpointsCleared = s.checkpointsCleared + (!result.isPractice && result.accuracy >= 70 && s.activeSession?.lessonId && lessonById(s.activeSession.lessonId)?.lesson.type === 'checkpoint' ? 1 : 0)
+          + (!result.isPractice && result.accuracy >= 70 && s.activeSession?.lessonId && lessonById(s.activeSession.lessonId)?.lesson.type === 'boss' ? 1 : 0)
 
         const nextState = {
           totalXP: s.totalXP + xpEarned,
@@ -488,8 +447,11 @@ export const useStore = create<State>()(
         if (crownUp) {
           get().pushToast({ icon: '👑', title: 'Kronen-Level aufgestiegen!', tone: 'success' })
         }
+        if (!result.isPractice && precisionHearts === 5) {
+          get().pushToast({ icon: '💎', title: 'Makellos! Präzisions-Bonus erhalten', subtitle: `+${precisionHearts} 💎`, tone: 'success' })
+        }
 
-        return { xpEarned, gemsEarned: gemsEarned + gemBonus + questGemBonus, crownUp, failed: !!failed }
+        return { xpEarned, gemsEarned: gemsEarned + gemBonus + questGemBonus, crownUp, precisionHearts }
       },
 
       applyPlacement: (skipToUnitIndex) => {
@@ -515,7 +477,7 @@ export const useStore = create<State>()(
 
       resetProgress: () => {
         set({
-          totalXP: 0, gems: 50, hearts: MAX_HEARTS, maxHearts: MAX_HEARTS, lastHeartLostAt: null,
+          totalXP: 0, gems: 50,
           xpBoostLessonsLeft: 0, currentStreak: 0, longestStreak: 0, lastPracticeDateISO: null,
           streakFreezes: 0, lessonProgress: {}, keyStats: {}, currentUnitIndex: 0, placementDone: false,
           completedUnitIds: [],
@@ -558,3 +520,16 @@ export function weakestKeys(count = 6): string[] {
 }
 
 export { allowedKeysForLesson }
+
+/** simple XP curve: level N requires N*80 more XP than the previous level */
+export function levelFromXP(totalXP: number): { level: number; xpIntoLevel: number; xpForNextLevel: number } {
+  let level = 1
+  let remaining = totalXP
+  let need = 80
+  while (remaining >= need) {
+    remaining -= need
+    level += 1
+    need = 80 + level * 20
+  }
+  return { level, xpIntoLevel: remaining, xpForNextLevel: need }
+}

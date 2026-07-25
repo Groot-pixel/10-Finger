@@ -32,7 +32,7 @@ export default function QuestsPage() {
         </div>
       </div>
 
-      <div className="mb-6 rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)' }}>
+      <div className="mb-6 rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)', boxShadow: 'var(--card-shadow)' }}>
         <div className="mb-2 flex items-center justify-between">
           <span className="font-extrabold">🎯 Tagesziel</span>
           <span className="text-sm font-bold" style={{ color: 'var(--text-muted)' }}>{xpEarnedToday}/{dailyGoalXP} EP</span>
@@ -60,7 +60,7 @@ export default function QuestsPage() {
           const claimed = claimedIds.includes(q.id)
           const pct = Math.min(100, Math.round((value / q.goal) * 100))
           return (
-            <div key={q.id} className="flex items-center gap-4 rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)' }}>
+            <div key={q.id} className="flex items-center gap-4 rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)', boxShadow: 'var(--card-shadow)' }}>
               <span className="text-2xl">{q.icon}</span>
               <div className="flex-1">
                 <div className="font-bold">{q.title}</div>

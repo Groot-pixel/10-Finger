@@ -9,12 +9,12 @@ export interface ShopItem {
 
 export const SHOP_ITEMS: ShopItem[] = [
   {
-    id: 'heart-refill',
-    title: 'Herzen auffüllen',
-    description: 'Fülle alle 5 Herzen sofort wieder auf.',
-    icon: '❤️',
-    price: 60,
-    kind: 'consumable',
+    id: 'mascot-bandana',
+    title: 'Halstuch für Flowy',
+    description: 'Ein farbenfrohes Halstuch für dein Maskottchen.',
+    icon: '🧣',
+    price: 90,
+    kind: 'cosmetic',
   },
   {
     id: 'streak-freeze',
