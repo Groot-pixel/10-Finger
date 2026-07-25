@@ -73,7 +73,6 @@ interface State {
   // shop
   ownedItems: string[]
   equippedCosmetics: string[]
-  darkModeUnlocked: boolean
   darkMode: boolean
   soundEnabled: boolean
 
@@ -165,8 +164,7 @@ export const useStore = create<State>()(
 
       ownedItems: [],
       equippedCosmetics: [],
-      darkModeUnlocked: false,
-      darkMode: false,
+      darkMode: typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches,
       soundEnabled: true,
 
       view: 'path',
@@ -247,11 +245,6 @@ export const useStore = create<State>()(
         }
         if (itemId === 'xp-boost') {
           set({ gems: s.gems - price, xpBoostLessonsLeft: s.xpBoostLessonsLeft + 3 })
-          return true
-        }
-        if (itemId === 'theme-dark') {
-          if (s.darkModeUnlocked) return false
-          set({ gems: s.gems - price, darkModeUnlocked: true, darkMode: true })
           return true
         }
         // cosmetic (one-time purchase)

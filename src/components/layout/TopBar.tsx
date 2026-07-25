@@ -6,6 +6,8 @@ export default function TopBar() {
   const totalXP = useStore((s) => s.totalXP)
   const xpEarnedToday = useStore((s) => s.xpEarnedToday)
   const dailyGoalXP = useStore((s) => s.dailyGoalXP)
+  const darkMode = useStore((s) => s.darkMode)
+  const toggleDarkMode = useStore((s) => s.toggleDarkMode)
   const setView = useStore((s) => s.setView)
 
   const goalPct = Math.min(100, Math.round((xpEarnedToday / dailyGoalXP) * 100))
@@ -30,6 +32,15 @@ export default function TopBar() {
       </div>
 
       <div className="flex items-center gap-1.5 text-sm font-bold sm:gap-2">
+        <button
+          onClick={toggleDarkMode}
+          className="icon-badge h-8 w-8 text-base"
+          style={{ background: 'var(--kb-key-bg)' }}
+          title={darkMode ? 'Zu hellem Modus wechseln' : 'Zu dunklem Modus wechseln'}
+          aria-label="Dark Mode umschalten"
+        >
+          {darkMode ? '☀️' : '🌙'}
+        </button>
         <button
           onClick={() => setView('profile')}
           className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-emerald-600"

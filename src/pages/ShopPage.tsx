@@ -9,7 +9,6 @@ export default function ShopPage() {
   const ownedItems = useStore((s) => s.ownedItems)
   const equippedCosmetics = useStore((s) => s.equippedCosmetics)
   const equipCosmetic = useStore((s) => s.equipCosmetic)
-  const darkModeUnlocked = useStore((s) => s.darkModeUnlocked)
   const streakFreezes = useStore((s) => s.streakFreezes)
   const xpBoostLessonsLeft = useStore((s) => s.xpBoostLessonsLeft)
 
@@ -35,8 +34,7 @@ export default function ShopPage() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         {SHOP_ITEMS.map((item) => {
-          const owned = item.kind === 'cosmetic' && item.id !== 'theme-dark' && ownedItems.includes(item.id)
-          const isDarkDone = item.id === 'theme-dark' && darkModeUnlocked
+          const owned = item.kind === 'cosmetic' && ownedItems.includes(item.id)
           const equipped = equippedCosmetics.includes(item.id)
           return (
             <div key={item.id} className="flex flex-col gap-2 rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)', boxShadow: 'var(--card-shadow)' }}>
@@ -45,18 +43,14 @@ export default function ShopPage() {
                 <span className="font-extrabold">{item.title}</span>
               </div>
               <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{item.description}</p>
-              {owned || isDarkDone ? (
-                item.kind === 'cosmetic' && item.id !== 'theme-dark' ? (
-                  <button
-                    onClick={() => equipCosmetic(item.id)}
-                    className="btn-press mt-1 rounded-xl px-4 py-2 text-sm font-bold"
-                    style={{ background: equipped ? 'var(--primary)' : 'var(--kb-key-bg)', color: equipped ? 'white' : 'var(--text)' }}
-                  >
-                    {equipped ? 'Angelegt ✓' : 'Anlegen'}
-                  </button>
-                ) : (
-                  <span className="mt-1 text-sm font-bold text-emerald-500">Freigeschaltet ✓</span>
-                )
+              {owned ? (
+                <button
+                  onClick={() => equipCosmetic(item.id)}
+                  className="btn-press mt-1 rounded-xl px-4 py-2 text-sm font-bold"
+                  style={{ background: equipped ? 'var(--primary)' : 'var(--kb-key-bg)', color: equipped ? 'white' : 'var(--text)' }}
+                >
+                  {equipped ? 'Angelegt ✓' : 'Anlegen'}
+                </button>
               ) : (
                 <button
                   onClick={() => handleBuy(item.id, item.price, item.title, item.icon)}

@@ -56,12 +56,4 @@ export const SHOP_ITEMS: ShopItem[] = [
     price: 300,
     kind: 'cosmetic',
   },
-  {
-    id: 'theme-dark',
-    title: 'Dunkles Theme',
-    description: 'Schalte den Dark Mode dauerhaft frei.',
-    icon: '🌙',
-    price: 120,
-    kind: 'cosmetic',
-  },
 ]

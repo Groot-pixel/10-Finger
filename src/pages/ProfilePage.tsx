@@ -17,7 +17,6 @@ export default function ProfilePage() {
   const soundEnabled = useStore((s) => s.soundEnabled)
   const toggleSound = useStore((s) => s.toggleSound)
   const darkMode = useStore((s) => s.darkMode)
-  const darkModeUnlocked = useStore((s) => s.darkModeUnlocked)
   const toggleDarkMode = useStore((s) => s.toggleDarkMode)
   const resetProgress = useStore((s) => s.resetProgress)
   const setView = useStore((s) => s.setView)
@@ -61,7 +60,7 @@ export default function ProfilePage() {
       <h2 className="mb-3 text-lg font-extrabold">Einstellungen</h2>
       <div className="flex flex-col gap-2">
         <SettingRow label="🔊 Soundeffekte" active={soundEnabled} onClick={toggleSound} />
-        <SettingRow label="🌙 Dark Mode" active={darkMode} onClick={toggleDarkMode} disabled={!darkModeUnlocked} disabledHint="Im Shop freischalten" />
+        <SettingRow label="🌙 Dark Mode" active={darkMode} onClick={toggleDarkMode} />
         <button
           onClick={() => setView('placement')}
           className="rounded-xl border px-4 py-3 text-left font-bold"
