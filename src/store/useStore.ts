@@ -5,6 +5,7 @@ import { ACHIEVEMENTS, tierReached } from '../data/achievements'
 import { buildDailyQuests, type DailyQuest } from '../data/quests'
 import { getWeekStartISO, computeLeagueBoard } from '../data/league'
 import { mulberry32, seedFromString } from '../data/content'
+import { SHOP_ITEMS } from '../data/shop'
 import type { LessonProgress, KeyStat, LessonResult, ViewKind, ActiveSession, ToastMsg, LeagueResultBanner } from '../types'
 
 function todayISO(d: Date = new Date()): string {
@@ -256,11 +257,16 @@ export const useStore = create<State>()(
       equipCosmetic: (itemId) => {
         const s = get()
         if (!s.ownedItems.includes(itemId)) return
-        set({
-          equippedCosmetics: s.equippedCosmetics.includes(itemId)
-            ? s.equippedCosmetics.filter((i) => i !== itemId)
-            : [...s.equippedCosmetics, itemId],
-        })
+        const isEquipped = s.equippedCosmetics.includes(itemId)
+        if (isEquipped) {
+          set({ equippedCosmetics: s.equippedCosmetics.filter((i) => i !== itemId) })
+          return
+        }
+        const slot = SHOP_ITEMS.find((i) => i.id === itemId)?.slot
+        const withoutSlotConflicts = slot
+          ? s.equippedCosmetics.filter((i) => SHOP_ITEMS.find((it) => it.id === i)?.slot !== slot)
+          : s.equippedCosmetics
+        set({ equippedCosmetics: [...withoutSlotConflicts, itemId] })
       },
 
       useStreakFreeze: () => {

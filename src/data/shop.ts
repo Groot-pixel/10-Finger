@@ -1,3 +1,5 @@
+export type CosmeticSlot = 'head' | 'eyes' | 'neck'
+
 export interface ShopItem {
   id: string
   title: string
@@ -5,6 +7,8 @@ export interface ShopItem {
   icon: string
   price: number
   kind: 'consumable' | 'cosmetic'
+  /** cosmetics in the same slot replace each other when equipped */
+  slot?: CosmeticSlot
 }
 
 export const SHOP_ITEMS: ShopItem[] = [
@@ -15,6 +19,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     icon: '🧣',
     price: 90,
     kind: 'cosmetic',
+    slot: 'neck',
   },
   {
     id: 'streak-freeze',
@@ -39,6 +44,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     icon: '🧢',
     price: 150,
     kind: 'cosmetic',
+    slot: 'head',
   },
   {
     id: 'mascot-sunglasses',
@@ -47,6 +53,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     icon: '🕶️',
     price: 150,
     kind: 'cosmetic',
+    slot: 'eyes',
   },
   {
     id: 'mascot-crown',
@@ -55,5 +62,6 @@ export const SHOP_ITEMS: ShopItem[] = [
     icon: '👑',
     price: 300,
     kind: 'cosmetic',
+    slot: 'head',
   },
 ]
