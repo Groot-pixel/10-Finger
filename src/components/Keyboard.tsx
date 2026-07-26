@@ -1,4 +1,7 @@
+import { useRef } from 'react'
 import { KEY_ROWS, FINGER_COLOR, fingerFor, isShifted, type KeyDef } from '../data/keyboard'
+import { useKeyRects } from '../hooks/useKeyRects'
+import HandsOverlay from './HandsOverlay'
 
 interface Props {
   nextChar: string | null
@@ -8,6 +11,7 @@ function Key({ k, active, dim }: { k: KeyDef; active: boolean; dim: boolean }) {
   const color = FINGER_COLOR[k.finger]
   return (
     <div
+      data-key={k.base}
       className="relative flex h-9 w-0 min-w-0 flex-1 select-none flex-col items-center justify-center rounded-md border text-[9px] font-semibold transition-all duration-100 sm:h-12 sm:rounded-lg sm:text-[11px]"
       style={{
         borderColor: active ? color : 'var(--kb-border)',
@@ -27,10 +31,13 @@ function Key({ k, active, dim }: { k: KeyDef; active: boolean; dim: boolean }) {
 export default function Keyboard({ nextChar }: Props) {
   const activeFinger = nextChar ? fingerFor(nextChar) : null
   const nextIsShift = nextChar ? isShifted(nextChar) : false
+  const containerRef = useRef<HTMLDivElement>(null)
+  const keyRects = useKeyRects(containerRef)
 
   return (
-    <div className="w-full overflow-hidden rounded-2xl border p-1.5 sm:p-3" style={{ background: 'var(--kb-panel-bg)', borderColor: 'var(--kb-border)' }}>
-      <div className="flex flex-col gap-1 sm:gap-1.5">
+    <div className="w-full overflow-x-hidden rounded-2xl border p-1.5 pb-8 sm:p-3 sm:pb-10" style={{ background: 'var(--kb-panel-bg)', borderColor: 'var(--kb-border)' }}>
+      <div ref={containerRef} className="relative flex flex-col gap-1 sm:gap-1.5">
+        <HandsOverlay keyRects={keyRects} nextChar={nextChar} />
         {KEY_ROWS.map((row, i) => (
           <div key={i} className="flex gap-0.5 sm:gap-1.5" style={{ paddingLeft: `${i * 2.2}%` }}>
             {row.map((k) => (
@@ -45,6 +52,7 @@ export default function Keyboard({ nextChar }: Props) {
         ))}
         <div className="flex gap-0.5 pl-4 sm:gap-1.5 sm:pl-6">
           <div
+            data-key=" "
             className="h-9 flex-1 rounded-md border sm:h-12 sm:rounded-lg"
             style={{
               borderColor: nextChar === ' ' ? FINGER_COLOR['L-thumb'] : 'var(--kb-border)',
@@ -54,6 +62,7 @@ export default function Keyboard({ nextChar }: Props) {
             }}
           />
           <div
+            data-key="shift"
             className="flex h-9 items-center justify-center rounded-md border px-2.5 text-[10px] font-bold sm:h-12 sm:rounded-lg sm:px-4 sm:text-[11px]"
             style={{
               borderColor: nextIsShift ? FINGER_COLOR['L-pinky'] : 'var(--kb-border)',
