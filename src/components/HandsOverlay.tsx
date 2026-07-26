@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import { FINGER_COLOR, fingerFor, isShifted, type FingerId } from '../data/keyboard'
 import { useAnimatedPoint } from '../hooks/useAnimatedPoint'
 import type { Point } from '../hooks/useKeyRects'
@@ -16,13 +17,53 @@ const HOME_KEY: Record<FingerId, string> = {
 const LEFT_FINGERS: FingerId[] = ['L-pinky', 'L-ring', 'L-middle', 'L-index']
 const RIGHT_FINGERS: FingerId[] = ['R-index', 'R-middle', 'R-ring', 'R-pinky']
 
-function ActiveFinger({ home, target, color }: { home: Point; target: Point; color: string }) {
+const SKIN = 'var(--kb-key-fg)'
+
+/** a rounded "finger" shape (wider at the base, tapering to the fingertip) between two arbitrary points */
+function taperedCapsulePath(x1: number, y1: number, x2: number, y2: number, r1: number, r2: number): string {
+  const dx = x2 - x1
+  const dy = y2 - y1
+  const len = Math.hypot(dx, dy) || 1
+  const ux = dx / len
+  const uy = dy / len
+  const px = -uy
+  const py = ux
+  const a1 = { x: x1 + px * r1, y: y1 + py * r1 }
+  const b1 = { x: x1 - px * r1, y: y1 - py * r1 }
+  const a2 = { x: x2 + px * r2, y: y2 + py * r2 }
+  const b2 = { x: x2 - px * r2, y: y2 - py * r2 }
+  return `M ${a1.x} ${a1.y} L ${a2.x} ${a2.y} A ${r2} ${r2} 0 0 1 ${b2.x} ${b2.y} L ${b1.x} ${b1.y} A ${r1} ${r1} 0 0 1 ${a1.x} ${a1.y} Z`
+}
+
+function Finger({ base, tip, r1, r2, glowId }: { base: Point; tip: Point; r1: number; r2: number; glowId?: string }) {
+  return (
+    <path
+      d={taperedCapsulePath(base.x, base.y, tip.x, tip.y, r1, r2)}
+      fill={glowId ? `url(#${glowId})` : SKIN}
+      fillOpacity={glowId ? 1 : 0.08}
+      stroke={SKIN}
+      strokeOpacity={0.4}
+      strokeWidth={1.3}
+    />
+  )
+}
+
+function ActiveFinger({ home, target, color, glowId }: { home: Point; target: Point; color: string; glowId: string }) {
   const tip = useAnimatedPoint(target) ?? home
   return (
-    <g style={{ transition: 'opacity 120ms ease' }}>
-      <line x1={home.x} y1={home.y} x2={tip.x} y2={tip.y} stroke={color} strokeWidth={11} strokeLinecap="round" opacity={0.55} />
-      <circle cx={tip.x} cy={tip.y} r={9} fill={color} stroke="#00000022" strokeWidth={1} />
-      <circle cx={tip.x} cy={tip.y} r={3.2} fill="#ffffff" opacity={0.6} />
+    <g>
+      <defs>
+        {/* soft light glowing up through the translucent fingertip, as if lit by the key underneath */}
+        <radialGradient id={glowId} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor={color} stopOpacity="0.16" />
+          <stop offset="55%" stopColor={color} stopOpacity="0.11" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.04" />
+        </radialGradient>
+      </defs>
+      {/* under-glow bleeding out from beneath the fingertip onto the keys around it */}
+      <circle cx={tip.x} cy={tip.y} r={20} fill={color} opacity={0.16} style={{ mixBlendMode: 'screen' }} />
+      <Finger base={home} tip={tip} r1={8} r2={6.5} glowId={glowId} />
+      <circle cx={tip.x} cy={tip.y} r={3} fill={color} opacity={0.55} />
     </g>
   )
 }
@@ -32,12 +73,13 @@ function Palm({ fingers, keyRects, palmY }: { fingers: FingerId[]; keyRects: Map
   if (points.length < 4) return null
   const p0 = points[0]
   const p3 = points[3]
-  const bulge = palmY + 26
-  const d = `M ${p0.x - 10} ${palmY} L ${p0.x - 6} ${palmY - 4} Q ${(p0.x + p3.x) / 2} ${bulge + 14} ${p3.x + 6} ${palmY - 4} L ${p3.x + 10} ${palmY} Q ${(p0.x + p3.x) / 2} ${bulge} ${p0.x - 10} ${palmY} Z`
-  return <path d={d} fill="var(--kb-key-fg)" opacity={0.08} />
+  const bulge = palmY + 34
+  const d = `M ${p0.x - 14} ${palmY - 6} Q ${p0.x - 16} ${palmY + 6} ${p0.x - 8} ${bulge - 2} Q ${(p0.x + p3.x) / 2} ${bulge + 12} ${p3.x + 8} ${bulge - 2} Q ${p3.x + 16} ${palmY + 6} ${p3.x + 14} ${palmY - 6} Z`
+  return <path d={d} fill={SKIN} fillOpacity={0.06} stroke={SKIN} strokeOpacity={0.3} strokeWidth={1.3} />
 }
 
 export default function HandsOverlay({ keyRects, nextChar }: Props) {
+  const uid = useId()
   if (keyRects.size === 0) return null
 
   const space = keyRects.get(' ')
@@ -67,21 +109,25 @@ export default function HandsOverlay({ keyRects, nextChar }: Props) {
       {allFingers.map((finger) => {
         const home = keyRects.get(HOME_KEY[finger])
         if (!home) return null
-        const base: Point = finger.endsWith('thumb') ? { x: home.x, y: palmY - 4 } : { x: home.x, y: palmY }
+        const isThumb = finger.endsWith('thumb')
+        const base: Point = isThumb ? { x: home.x, y: palmY - 4 } : { x: home.x, y: palmY }
 
         const isLetterFinger = finger === activeLetterFinger && !!letterTarget
         const isShiftFinger = finger === shiftFinger && !!shiftTarget
         if (isLetterFinger || isShiftFinger) {
           const target = (isLetterFinger ? letterTarget : shiftTarget) as Point
-          return <ActiveFinger key={finger} home={base} target={target} color={FINGER_COLOR[finger]} />
+          return (
+            <ActiveFinger
+              key={finger}
+              home={base}
+              target={target}
+              color={FINGER_COLOR[finger]}
+              glowId={`${uid}-glow-${finger}`}
+            />
+          )
         }
 
-        return (
-          <g key={finger} opacity={0.22}>
-            <line x1={base.x} y1={base.y} x2={home.x} y2={home.y} stroke="var(--kb-key-fg)" strokeWidth={9} strokeLinecap="round" />
-            <circle cx={home.x} cy={home.y} r={6.5} fill="var(--kb-key-fg)" />
-          </g>
-        )
+        return <Finger key={finger} base={base} tip={home} r1={isThumb ? 7 : 7.5} r2={isThumb ? 6 : 6} />
       })}
     </svg>
   )
