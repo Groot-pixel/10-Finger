@@ -9,7 +9,18 @@ und deine Freunde.
 > von der ursprünglichen „ZehnFinger"-Tipptrainer-App im Repo-Root, damit beide Projekte
 > unabhängig voneinander bestehen bleiben.
 
-## Tech-Stack
+## Zwei Varianten
+
+Es gibt diese App in zwei Ausführungen:
+
+1. **Server-Version** (`client/` + `server/`, unten beschrieben) – volle Mehrbenutzer-App
+   mit Login, gemeinsamer Bibliothek, Kommentaren und Bewertungen zwischen dir und deinen
+   Freunden. Braucht `npm install` + einen laufenden Server.
+2. **[CraftGuide Solo](standalone/README.md)** – eine einzelne Offline-HTML-Datei ganz ohne
+   Server/Login (wie die ZehnFinger-App), Daten liegen nur lokal im Browser, Teilen per
+   Export/Import-JSON. Fertig zum Herunterladen: [`../download/CraftGuideSolo.html`](../download/CraftGuideSolo.html).
+
+## Tech-Stack (Server-Version)
 
 - **Frontend**: React 18 + Vite, Tailwind CSS, Three.js, Zustand, React Router
 - **Backend**: Node.js + Express
