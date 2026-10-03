@@ -23,28 +23,47 @@ const HOME_KEY: Record<HandSide, Record<Exclude<HandPart, 'thumb'>, string>> = {
 }
 /** where each finger leaves the palm (B) and where its tip rests (T), in reference pixels */
 const BASE: Record<HandSide, Record<HandPart, Point>> = {
-  L: { pinky: { x: 175, y: 520 }, ring: { x: 235, y: 520 }, middle: { x: 330, y: 520 }, index: { x: 420, y: 540 }, thumb: { x: 470, y: 640 } },
-  R: { pinky: { x: 1010, y: 540 }, ring: { x: 915, y: 540 }, middle: { x: 820, y: 560 }, index: { x: 720, y: 560 }, thumb: { x: 680, y: 620 } },
+  L: { pinky: { x: 148, y: 488 }, ring: { x: 197, y: 498 }, middle: { x: 292, y: 487 }, index: { x: 395, y: 538 }, thumb: { x: 470, y: 640 } },
+  R: { pinky: { x: 1015, y: 509 }, ring: { x: 944, y: 501 }, middle: { x: 861, y: 519 }, index: { x: 765, y: 551 }, thumb: { x: 680, y: 620 } },
 }
 const TIP: Record<HandSide, Record<HandPart, Point>> = {
   L: { pinky: { x: 236, y: 283 }, ring: { x: 319, y: 283 }, middle: { x: 401, y: 283 }, index: { x: 485, y: 283 }, thumb: { x: 520, y: 445 } },
   R: { pinky: { x: 983, y: 283 }, ring: { x: 900, y: 283 }, middle: { x: 817, y: 283 }, index: { x: 734, y: 283 }, thumb: { x: 640, y: 425 } },
 }
-/** share of a reach (in reference px) that the whole hand takes over – the further the key, the more the hand moves */
-const handFollow = (dist: number) => Math.min(0.68, 0.18 + dist / 380)
-const MAX_FOLLOW = 0.85
-/** how far (radians) a finger may swing sideways on its own, and how much it may shorten (curl) */
-const MAX_TURN = 0.3
-const MIN_SCALE = 0.74
-/** how firmly the other fingers stay on their home keys while the hand moves */
-const PIN = 0.85
+/**
+ * How a hand reaches for a key, like a real one: it first turns a little at the wrist towards the key,
+ * then slides a bit; the finger does the rest by turning and stretching/curling. The other fingers ride
+ * along with the hand and only lean slightly back towards their home keys.
+ */
+const WRIST: Record<HandSide, Point> = { L: { x: 250, y: 860 }, R: { x: 880, y: 860 } }
+const HAND_TURN_SHARE = 0.4
+const MAX_HAND_TURN = 0.08
+/** share of the finger's own part that the hand still takes over, so nothing looks frozen */
+const HAND_SHARE = 0.12
+/** how far (radians) a finger may swing sideways on its own, and how much it may curl or stretch */
+const MAX_TURN = 0.1
+const MIN_SCALE = 0.9
+/** the (clean) pinky may curl much further on its own, e.g. down to shift */
+const MIN_SCALE_PINKY = 0.6
+const MAX_TURN_PINKY = 0.22
+const MAX_SCALE = 1.3
+/** how much the other fingers lean back towards their home keys */
+const PIN = 0.5
+
+const rotateAbout = (p: Point, c: Point, a: number): Point => {
+  const cs = Math.cos(a)
+  const sn = Math.sin(a)
+  return { x: c.x + cs * (p.x - c.x) - sn * (p.y - c.y), y: c.y + sn * (p.x - c.x) + cs * (p.y - c.y) }
+}
+const clamp = (v: number, m: number) => Math.max(-m, Math.min(m, v))
 
 type Pts = number[]
 
 /**
- * Turns and stretches one finger about its knuckle B so its tip T lands on `target`.
- * The rotation and scaling fade in from the knuckle (none) to the fingertip (full),
- * so the finger bends smoothly while its lines stay attached to the hand.
+ * Turns one finger about its knuckle B and stretches or curls it along its own length so its tip T
+ * lands on `target`. The finger keeps its width (a curled finger seen from above just looks shorter).
+ * Turn and length change fade in from the knuckle (none) to the fingertip (full), so the finger bends
+ * smoothly while its lines stay attached to the hand.
  */
 function bend(pts: Pts, B: Point, T: Point, target: Point): Pts {
   const ax = T.x - B.x
@@ -60,11 +79,14 @@ function bend(pts: Pts, B: Point, T: Point, target: Point): Pts {
     const py = pts[i + 1] - B.y
     const t = (px * ax + py * ay) / L2
     const w = t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t)
+    // stretch only the part along the finger: the tip moves (scale-1)·L, everything below it proportionally
+    const along = t <= 0 ? 0 : (scale - 1) * Math.min(t, 1)
+    const qx = px + along * ax
+    const qy = py + along * ay
     const c = Math.cos(angle * w)
     const s = Math.sin(angle * w)
-    const k = 1 + (scale - 1) * w
-    out[i] = B.x + k * (c * px - s * py)
-    out[i + 1] = B.y + k * (s * px + c * py)
+    out[i] = B.x + c * qx - s * qy
+    out[i + 1] = B.y + s * qx + c * qy
   }
   return out
 }
@@ -131,7 +153,7 @@ function resample(pts: Pts, n: number): Pts {
 }
 
 /** a clean, rounded finger outline (one U-shaped line, inner side → tip → outer side) */
-function fingerOutline(root: Point, tip: Point, halfRoot: number, halfTip: number): Pts {
+function fingerOutline(root: Point, tip: Point, halfRoot: number, halfTip: number, curve = 0): Pts {
   const ax = tip.x - root.x
   const ay = tip.y - root.y
   const len = Math.hypot(ax, ay)
@@ -141,11 +163,13 @@ function fingerOutline(root: Point, tip: Point, halfRoot: number, halfTip: numbe
   const ny = dx
   const inner: Pts = []
   const outer: Pts = []
-  for (let i = 0; i <= 12; i++) {
-    const t = -0.08 + (1.08 * i) / 12
+  for (let i = 0; i <= 14; i++) {
+    const t = -0.16 + (1.16 * i) / 14
     const h = halfRoot + (halfTip - halfRoot) * Math.max(0, t)
-    inner.push(root.x + ax * t + nx * h, root.y + ay * t + ny * h)
-    outer.push(root.x + ax * t - nx * h, root.y + ay * t - ny * h)
+    // a slight outward bow, like a real (and the drawn) pinky
+    const bow = -curve * Math.sin(Math.PI * Math.max(0, t))
+    inner.push(root.x + ax * t + nx * (h + bow), root.y + ay * t + ny * (h + bow))
+    outer.push(root.x + ax * t - nx * (h - bow), root.y + ay * t - ny * (h - bow))
   }
   const cap: Pts = []
   for (let i = 1; i < 10; i++) {
@@ -168,7 +192,7 @@ const reversed = (pts: Pts): Pts => {
 }
 const PINKY_N = 64
 const PINKY_DRAWN = resample([...reversed(HAND_STROKES.L.ring[1]), ...reversed(HAND_STROKES.L.pinky[1]), ...HAND_STROKES.L.pinky[0]], PINKY_N)
-const PINKY_CLEAN = resample(fingerOutline({ x: 136, y: 508 }, { x: 233, y: 292 }, 21, 19), PINKY_N)
+const PINKY_CLEAN = resample(fingerOutline({ x: 150, y: 482 }, { x: 233, y: 293 }, 22, 19, 7), PINKY_N)
 function leftPinky(reach: number): Pts {
   const m = Math.min(1, reach / 45)
   return PINKY_DRAWN.map((v, i) => v + (PINKY_CLEAN[i] - v) * m)
@@ -310,38 +334,66 @@ export default function HandsOverlay({ keyRects, nextChar }: Props) {
   const fills: string[] = []
   const strokes: { d: string; color: string | null }[] = []
   for (const hand of ['L', 'R'] as HandSide[]) {
-    // the hand follows the longest reach part of the way (more for far keys and for keys the finger
-    // could only reach by turning sharply), so the finger itself never over-stretches or lies down flat
-    let shift: Point = { x: 0, y: 0 }
+    // the reach that decides how the whole hand moves: the longest one
+    let lead: { T: Point; B: Point; t: Point; minScale: number; maxTurn: number } | null = null
     let longest = 0
     for (const f of FINGERS) {
       const t = reach[hand][f]
       if (!t) continue
-      const T = TIP[hand][f]
-      const B = BASE[hand][f]
-      const dx = t.x - T.x
-      const dy = t.y - T.y
-      if (Math.hypot(dx, dy) <= longest) continue
-      longest = Math.hypot(dx, dy)
-      let k = handFollow(longest)
-      for (; k < MAX_FOLLOW; k += 0.04) {
-        const gx = t.x - dx * k - B.x
-        const gy = t.y - dy * k - B.y
-        const turn = Math.atan2(gy, gx) - Math.atan2(T.y - B.y, T.x - B.x)
-        const scale = Math.hypot(gx, gy) / Math.hypot(T.x - B.x, T.y - B.y)
-        if (Math.abs(turn) <= MAX_TURN && scale >= MIN_SCALE) break
-      }
-      shift = { x: dx * k, y: dy * k }
+      const d = Math.hypot(t.x - TIP[hand][f].x, t.y - TIP[hand][f].y)
+      if (d <= longest) continue
+      longest = d
+      lead = { T: TIP[hand][f], B: BASE[hand][f], t, minScale: f === 'pinky' ? MIN_SCALE_PINKY : MIN_SCALE, maxTurn: f === 'pinky' ? MAX_TURN_PINKY : MAX_TURN }
     }
+    const W = WRIST[hand]
+    let angle = 0
+    let shift: Point = { x: 0, y: 0 }
+    if (lead) {
+      const { T, B, t, minScale, maxTurn } = lead
+      angle = clamp(HAND_TURN_SHARE * (Math.atan2(t.y - W.y, t.x - W.x) - Math.atan2(T.y - W.y, T.x - W.x)), MAX_HAND_TURN)
+      const Tr = rotateAbout(T, W, angle)
+      const Br = rotateAbout(B, W, angle)
+      // split what is left of the reach into "along the finger" (it stretches / curls) and "sideways"
+      // (it may turn a little) – whatever the finger can't do, the hand does by sliding
+      const len0 = Math.hypot(T.x - B.x, T.y - B.y)
+      const ux = (Tr.x - Br.x) / len0
+      const uy = (Tr.y - Br.y) / len0
+      const dx = t.x - Tr.x
+      const dy = t.y - Tr.y
+      const along = dx * ux + dy * uy
+      const px = dx - along * ux
+      const py = dy - along * uy
+      const fAlong = Math.max((minScale - 1) * len0, Math.min((MAX_SCALE - 1) * len0, along))
+      const side = Math.hypot(px, py)
+      const fSide = side ? Math.min(1, (maxTurn * len0) / side) : 0
+      const handX = (along - fAlong) * ux + px * (1 - fSide)
+      const handY = (along - fAlong) * uy + py * (1 - fSide)
+      shift = { x: handX + HAND_SHARE * (dx - handX), y: handY + HAND_SHARE * (dy - handY) }
+    }
+    // hand transform (reference space): turn about the wrist, then slide
+    const toWorld = (p: Point): Point => {
+      const r = rotateAbout(p, W, angle)
+      return { x: r.x + shift.x, y: r.y + shift.y }
+    }
+    const toLocal = (p: Point): Point => rotateAbout({ x: p.x - shift.x, y: p.y - shift.y }, W, -angle)
     const base = toScreen(hand)
-    const map = (x: number, y: number) => base(x + shift.x, y + shift.y)
+    const map = (x: number, y: number) => {
+      const q = toWorld({ x, y })
+      return base(q.x, q.y)
+    }
 
     const shaped = (part: HandPart, pts: Pts) => {
       if (!longest) return pts
       const T = TIP[hand][part]
       const t = reach[hand][part]
-      const pin = part === 'thumb' ? 0.3 : PIN
-      const goal = t ? { x: t.x - shift.x, y: t.y - shift.y } : { x: T.x - pin * shift.x, y: T.y - pin * shift.y }
+      let goal: Point
+      if (t) goal = toLocal(t)
+      else {
+        // ride along with the hand, leaning a little back towards the home key
+        const moved = toWorld(T)
+        const pin = part === 'thumb' ? 0.15 : PIN
+        goal = toLocal({ x: moved.x + (T.x - moved.x) * pin, y: moved.y + (T.y - moved.y) * pin })
+      }
       return bend(pts, BASE[hand][part], T, goal)
     }
 
