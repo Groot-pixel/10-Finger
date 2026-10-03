@@ -35,7 +35,7 @@ export default function Keyboard({ nextChar }: Props) {
   const keyRects = useKeyRects(containerRef)
 
   return (
-    <div className="w-full overflow-x-hidden rounded-2xl border p-1.5 pb-8 sm:p-3 sm:pb-10" style={{ background: 'var(--kb-panel-bg)', borderColor: 'var(--kb-border)' }}>
+    <div className="w-full overflow-hidden rounded-2xl border p-1.5 pb-10 sm:p-3 sm:pb-14" style={{ background: 'var(--kb-panel-bg)', borderColor: 'var(--kb-border)' }}>
       <div ref={containerRef} className="relative flex flex-col gap-1 sm:gap-1.5">
         <HandsOverlay keyRects={keyRects} nextChar={nextChar} />
         {KEY_ROWS.map((row, i) => (
