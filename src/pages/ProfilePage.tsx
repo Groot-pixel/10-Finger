@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../store/useStore'
 import { CURRICULUM } from '../data/curriculum'
+import { ABC_TEXT } from '../data/keyboard'
 import Mascot from '../components/Mascot'
 
 export default function ProfilePage() {
@@ -20,6 +21,7 @@ export default function ProfilePage() {
   const toggleDarkMode = useStore((s) => s.toggleDarkMode)
   const resetProgress = useStore((s) => s.resetProgress)
   const setView = useStore((s) => s.setView)
+  const startPractice = useStore((s) => s.startPractice)
 
   const [confirmReset, setConfirmReset] = useState(false)
 
@@ -39,6 +41,19 @@ export default function ProfilePage() {
         <Stat icon="💯" label="Perfekte Lektionen" value={perfectLessons} />
         <Stat icon="🔥" label="Bestwert Serie" value={longestStreak} />
       </div>
+
+      <button
+        onClick={() => startPractice(ABC_TEXT)}
+        className="mb-8 flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-transform hover:-translate-y-0.5"
+        style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)', boxShadow: 'var(--card-shadow)' }}
+      >
+        <span className="icon-badge flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl" style={{ background: '#6366f1' }}>🔤</span>
+        <span className="flex-1">
+          <span className="block font-extrabold">ABC-Durchlauf</span>
+          <span className="block text-sm" style={{ color: 'var(--text-muted)' }}>Einmal das ganze Alphabet tippen – a bis ß, dann alle Großbuchstaben. Die Hände zeigen dir jeden Finger.</span>
+        </span>
+        <span className="text-xl font-extrabold" style={{ color: 'var(--text-muted)' }}>›</span>
+      </button>
 
       <h2 className="mb-3 text-lg font-extrabold">Fortschritt pro Unit</h2>
       <div className="mb-8 flex flex-col gap-2">

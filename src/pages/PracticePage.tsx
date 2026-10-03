@@ -2,7 +2,7 @@ import { useStore, unlockedKeysForPlayer, weakestKeys } from '../store/useStore'
 import { generateWeakKeyPractice, generateSpeedTestText } from '../engine/textGenerator'
 import { generateLessonText } from '../engine/textGenerator'
 import { ALL_LESSON_IDS } from '../data/curriculum'
-import { FINGER_LABEL, fingerFor } from '../data/keyboard'
+import { ABC_TEXT, FINGER_LABEL, fingerFor } from '../data/keyboard'
 import Mascot from '../components/Mascot'
 
 export default function PracticePage() {
@@ -52,6 +52,7 @@ export default function PracticePage() {
         />
         <Card icon="🔁" title="Zufällige Wiederholung" desc="Wiederhole eine bereits gelernte Lektion." onClick={practiceRandomReview} color="#8b5cf6" />
         <Card icon="⚡" title="Geschwindigkeitstest" desc="Wie viele WPM schaffst du in einem Textabschnitt?" onClick={speedTest} color="#0ea5e9" />
+        <Card icon="🔤" title="ABC-Durchlauf" desc="Das ganze Alphabet einmal durch – a bis ß, dann Großbuchstaben." onClick={() => startPractice(ABC_TEXT)} color="#6366f1" />
         <Card icon="🎹" title="Freies Tippen" desc="Ein zufälliger Übungstext mit deinem aktuellen Wortschatz." onClick={practiceRandomReview} color="#22c55e" />
       </div>
 

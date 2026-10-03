@@ -133,3 +133,10 @@ export const HAND_OF: Record<FingerId, 'L' | 'R'> = {
   'L-pinky': 'L', 'L-ring': 'L', 'L-middle': 'L', 'L-index': 'L', 'L-thumb': 'L',
   'R-thumb': 'R', 'R-index': 'R', 'R-middle': 'R', 'R-ring': 'R', 'R-pinky': 'R',
 }
+
+/** the whole alphabet, letter by letter – first lowercase, then capitals (with shift) */
+export const ABC_TEXT = (() => {
+  const lower = 'abcdefghijklmnopqrstuvwxyzäöüß'.split('')
+  const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜ'.split('')
+  return `${lower.join(' ')} ${upper.join(' ')}`
+})()
