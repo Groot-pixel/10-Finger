@@ -1,14 +1,14 @@
 import { useRef } from 'react'
-import { KEY_ROWS, FINGER_COLOR, fingerFor, isShifted, type KeyDef } from '../data/keyboard'
+import { KEY_ROWS, shiftKeyFor, type KeyDef } from '../data/keyboard'
 import { useKeyRects } from '../hooks/useKeyRects'
-import HandsOverlay from './HandsOverlay'
+import HandsOverlay, { HAND_ACCENT } from './HandsOverlay'
 
 interface Props {
   nextChar: string | null
 }
 
-function Key({ k, active, dim }: { k: KeyDef; active: boolean; dim: boolean }) {
-  const color = FINGER_COLOR[k.finger]
+function Key({ k, active }: { k: KeyDef; active: boolean }) {
+  const color = HAND_ACCENT
   return (
     <div
       data-key={k.base}
@@ -16,9 +16,8 @@ function Key({ k, active, dim }: { k: KeyDef; active: boolean; dim: boolean }) {
       style={{
         borderColor: active ? color : 'var(--kb-border)',
         background: active ? color : 'var(--kb-key-bg)',
-        color: active ? '#0b1220' : 'var(--kb-key-fg)',
-        opacity: dim ? 0.45 : 1,
-        boxShadow: active ? `0 0 0 3px ${color}55, 0 3px 0 0 ${color}aa` : '0 2px 0 0 var(--kb-key-shadow)',
+        color: active ? '#ffffff' : 'var(--kb-key-fg)',
+        boxShadow: active ? 'none' : '0 2px 0 0 var(--kb-key-shadow)',
         transform: active ? 'translateY(1px)' : 'none',
       }}
     >
@@ -28,9 +27,25 @@ function Key({ k, active, dim }: { k: KeyDef; active: boolean; dim: boolean }) {
   )
 }
 
+function ShiftKey({ id, active }: { id: 'shiftL' | 'shift'; active: boolean }) {
+  return (
+    <div
+      data-key={id}
+      className="flex h-9 w-[13%] items-center justify-center rounded-md border text-[10px] font-bold sm:h-12 sm:rounded-lg sm:text-[11px]"
+      style={{
+        borderColor: active ? HAND_ACCENT : 'var(--kb-border)',
+        background: active ? HAND_ACCENT : 'var(--kb-key-bg)',
+        color: active ? '#ffffff' : 'var(--kb-key-fg)',
+        boxShadow: active ? 'none' : '0 2px 0 0 var(--kb-key-shadow)',
+      }}
+    >
+      ⇧
+    </div>
+  )
+}
+
 export default function Keyboard({ nextChar }: Props) {
-  const activeFinger = nextChar ? fingerFor(nextChar) : null
-  const nextIsShift = nextChar ? isShifted(nextChar) : false
+  const shiftKey = nextChar ? shiftKeyFor(nextChar) : null
   const containerRef = useRef<HTMLDivElement>(null)
   const keyRects = useKeyRects(containerRef)
 
@@ -45,35 +60,22 @@ export default function Keyboard({ nextChar }: Props) {
                 key={k.base}
                 k={k}
                 active={nextChar !== null && (nextChar.toLowerCase() === k.base || nextChar === k.shift)}
-                dim={activeFinger !== null && k.finger !== activeFinger && !(nextChar !== null && (nextChar.toLowerCase() === k.base || nextChar === k.shift))}
               />
             ))}
           </div>
         ))}
-        <div className="flex gap-0.5 pl-4 sm:gap-1.5 sm:pl-6">
+        <div className="flex gap-0.5 sm:gap-1.5">
+          <ShiftKey id="shiftL" active={shiftKey === 'shiftL'} />
           <div
             data-key=" "
             className="h-9 flex-1 rounded-md border sm:h-12 sm:rounded-lg"
             style={{
-              borderColor: nextChar === ' ' ? FINGER_COLOR['L-thumb'] : 'var(--kb-border)',
-              background: nextChar === ' ' ? FINGER_COLOR['L-thumb'] : 'var(--kb-key-bg)',
-              boxShadow: nextChar === ' ' ? `0 0 0 3px ${FINGER_COLOR['L-thumb']}55` : '0 2px 0 0 var(--kb-key-shadow)',
-              opacity: nextChar !== null && nextChar !== ' ' ? 0.45 : 1,
+              borderColor: nextChar === ' ' ? HAND_ACCENT : 'var(--kb-border)',
+              background: nextChar === ' ' ? HAND_ACCENT : 'var(--kb-key-bg)',
+              boxShadow: nextChar === ' ' ? 'none' : '0 2px 0 0 var(--kb-key-shadow)',
             }}
           />
-          <div
-            data-key="shift"
-            className="flex h-9 items-center justify-center rounded-md border px-2.5 text-[10px] font-bold sm:h-12 sm:rounded-lg sm:px-4 sm:text-[11px]"
-            style={{
-              borderColor: nextIsShift ? FINGER_COLOR['L-pinky'] : 'var(--kb-border)',
-              background: nextIsShift ? FINGER_COLOR['L-pinky'] : 'var(--kb-key-bg)',
-              color: nextIsShift ? '#0b1220' : 'var(--kb-key-fg)',
-              boxShadow: nextIsShift ? `0 0 0 3px ${FINGER_COLOR['L-pinky']}55` : '0 2px 0 0 var(--kb-key-shadow)',
-              opacity: nextChar !== null && !nextIsShift ? 0.45 : 1,
-            }}
-          >
-            ⇧
-          </div>
+          <ShiftKey id="shift" active={shiftKey === 'shift'} />
         </div>
       </div>
     </div>

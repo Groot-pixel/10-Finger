@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { FINGER_COLOR, fingerFor, isShifted, type FingerId } from '../data/keyboard'
+import { fingerFor, shiftKeyFor, type FingerId } from '../data/keyboard'
+import { HAND_FILLS, HAND_STROKES, type HandPart, type HandSide } from '../data/handArt'
 import type { Point } from '../hooks/useKeyRects'
 
 interface Props {
@@ -7,65 +8,92 @@ interface Props {
   nextChar: string | null
 }
 
+export const HAND_ACCENT = '#2b84e6'
 const SKIN = 'var(--kb-key-fg)'
-const LINE = 1.5
 
-type Hand = 'L' | 'R'
-type Digit = 'pinky' | 'ring' | 'middle' | 'index' | 'thumb'
-type Finger = Exclude<Digit, 'thumb'>
-
-const FINGERS: Finger[] = ['pinky', 'ring', 'middle', 'index']
-const HOME_KEY: Record<Hand, Record<Finger, string>> = {
+/* ---- reference drawing geometry (see data/handArt.ts) ---- */
+const REF_PITCH = 83.1
+const REF_HOME_Y = 283
+const REF_SPACE_Y = 451
+/** key the hand is anchored to in the reference drawing and in the app */
+const ANCHOR: Record<HandSide, { key: string; x: number }> = { L: { key: 'f', x: 485 }, R: { key: 'j', x: 734 } }
+const FINGERS: Exclude<HandPart, 'thumb'>[] = ['pinky', 'ring', 'middle', 'index']
+const HOME_KEY: Record<HandSide, Record<Exclude<HandPart, 'thumb'>, string>> = {
   L: { pinky: 'a', ring: 's', middle: 'd', index: 'f' },
   R: { pinky: 'ö', ring: 'l', middle: 'k', index: 'j' },
 }
+/** where each finger leaves the palm (B) and where its tip rests (T), in reference pixels */
+const BASE: Record<HandSide, Record<HandPart, Point>> = {
+  L: { pinky: { x: 175, y: 520 }, ring: { x: 235, y: 520 }, middle: { x: 330, y: 520 }, index: { x: 420, y: 540 }, thumb: { x: 470, y: 640 } },
+  R: { pinky: { x: 1010, y: 540 }, ring: { x: 915, y: 540 }, middle: { x: 820, y: 560 }, index: { x: 720, y: 560 }, thumb: { x: 680, y: 620 } },
+}
+const TIP: Record<HandSide, Record<HandPart, Point>> = {
+  L: { pinky: { x: 236, y: 283 }, ring: { x: 319, y: 283 }, middle: { x: 401, y: 283 }, index: { x: 485, y: 283 }, thumb: { x: 520, y: 445 } },
+  R: { pinky: { x: 983, y: 283 }, ring: { x: 900, y: 283 }, middle: { x: 817, y: 283 }, index: { x: 734, y: 283 }, thumb: { x: 640, y: 425 } },
+}
+/** share of a reach (in reference px) that the whole hand takes over – the further the key, the more the hand moves */
+const handFollow = (dist: number) => Math.min(0.68, 0.18 + dist / 380)
+const MAX_FOLLOW = 0.85
+/** how far (radians) a finger may swing sideways on its own */
+const MAX_TURN = 0.3
+/** how firmly the other fingers stay on their home keys while the hand moves */
+const PIN = 0.85
 
-/*
- * Proportions taken from photos of a real hand resting on a keyboard (all in key widths):
- * fingers are almost a key wide and lie nearly parallel, the knuckles sit roughly at
- * space-bar height, the pinky starts lower, and the thumb leaves the palm low on its
- * inner side and points diagonally up onto the space bar.
+type Pts = number[]
+
+/**
+ * Turns and stretches one finger about its knuckle B so its tip T lands on `target`.
+ * The rotation and scaling fade in from the knuckle (none) to the fingertip (full),
+ * so the finger bends smoothly while its lines stay attached to the hand.
  */
-const WIDTH: Record<Digit, number> = { pinky: 0.6, ring: 0.7, middle: 0.74, index: 0.72, thumb: 0.68 }
-const KNUCKLE_SHIFT: Record<Finger, number> = { pinky: 0.14, ring: 0.05, middle: 0, index: -0.05 }
-const KNUCKLE_DROP: Record<Finger, number> = { pinky: 0.32, ring: 0.06, middle: 0, index: 0.05 }
-const KNUCKLE_Y = 1.75
-/** a fingertip never sits further than this above its knuckle – beyond that the whole hand slides up */
-const MAX_REACH = 2.35
-
-type Part = { kind: 'shape'; d: string } | { kind: 'limb'; d: string; w: number }
-
-function limbPath(from: Point, to: Point, bend: number): string {
-  const dx = to.x - from.x
-  const dy = to.y - from.y
-  const len = Math.hypot(dx, dy) || 1
-  const cx = (from.x + to.x) / 2 + (-dy / len) * bend
-  const cy = (from.y + to.y) / 2 + (dx / len) * bend
-  return `M ${from.x} ${from.y} Q ${cx} ${cy} ${to.x} ${to.y}`
-}
-
-/** smooth closed outline through the midpoints of a polygon, using its corners as curve handles */
-function roundedShape(pts: Point[]): string {
-  const mid = (p: Point, q: Point) => ({ x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 })
-  const n = pts.length
-  const start = mid(pts[n - 1], pts[0])
-  let d = `M ${start.x} ${start.y}`
-  for (let i = 0; i < n; i++) {
-    const m = mid(pts[i], pts[(i + 1) % n])
-    d += ` Q ${pts[i].x} ${pts[i].y} ${m.x} ${m.y}`
+function bend(pts: Pts, B: Point, T: Point, target: Point): Pts {
+  const ax = T.x - B.x
+  const ay = T.y - B.y
+  const L2 = ax * ax + ay * ay || 1
+  const bx = target.x - B.x
+  const by = target.y - B.y
+  const angle = Math.atan2(by, bx) - Math.atan2(ay, ax)
+  const scale = Math.sqrt((bx * bx + by * by) / L2)
+  const out: Pts = new Array(pts.length)
+  for (let i = 0; i < pts.length; i += 2) {
+    const px = pts[i] - B.x
+    const py = pts[i + 1] - B.y
+    const t = (px * ax + py * ay) / L2
+    const w = t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t)
+    const c = Math.cos(angle * w)
+    const s = Math.sin(angle * w)
+    const k = 1 + (scale - 1) * w
+    out[i] = B.x + k * (c * px - s * py)
+    out[i + 1] = B.y + k * (s * px + c * py)
   }
-  return d + ' Z'
+  return out
 }
 
-function renderParts(parts: Part[], mode: 'outer' | 'inner', color: string) {
-  const extra = mode === 'outer' ? LINE * 2 : 0
-  return parts.map((p, i) =>
-    p.kind === 'shape' ? (
-      <path key={i} d={p.d} fill={color} stroke={color} strokeWidth={extra} strokeLinejoin="round" />
-    ) : (
-      <path key={i} d={p.d} fill="none" stroke={color} strokeWidth={p.w + extra} strokeLinecap="round" />
-    ),
-  )
+/** contour lines a finger shares with its neighbour (drawn by the neighbour); the active finger draws them too */
+const BORROW: Record<HandSide, Partial<Record<HandPart, [HandPart, number]>>> = {
+  L: { pinky: ['ring', 1], ring: ['middle', 1] },
+  R: { middle: ['index', 1], ring: ['middle', 1], pinky: ['ring', 1] },
+}
+
+/** smooth Catmull-Rom curve through the points, already mapped to screen space */
+function toPath(pts: Pts, map: (x: number, y: number) => [number, number], closed = false): string {
+  const p: [number, number][] = []
+  for (let i = 0; i < pts.length; i += 2) p.push(map(pts[i], pts[i + 1]))
+  if (p.length < 2) return ''
+  let d = `M ${p[0][0].toFixed(1)} ${p[0][1].toFixed(1)}`
+  const n = p.length
+  for (let i = 0; i < n - 1; i++) {
+    const p0 = p[closed ? (i - 1 + n) % n : Math.max(0, i - 1)]
+    const p1 = p[i]
+    const p2 = p[i + 1]
+    const p3 = p[closed ? (i + 2) % n : Math.min(n - 1, i + 2)]
+    const c1x = p1[0] + (p2[0] - p0[0]) / 6
+    const c1y = p1[1] + (p2[1] - p0[1]) / 6
+    const c2x = p2[0] - (p3[0] - p1[0]) / 6
+    const c2y = p2[1] - (p3[1] - p1[1]) / 6
+    d += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)} ${c2x.toFixed(1)} ${c2y.toFixed(1)} ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`
+  }
+  return closed ? d + ' Z' : d
 }
 
 /** remembers the tip of a moving finger and eases it to its target; restarts from home when another finger takes over */
@@ -85,7 +113,7 @@ function useFingerTip(id: string | null, home: Point | null, target: Point | nul
     const from = lastId.current === id && current.current ? current.current : home
     lastId.current = id
     const start = performance.now()
-    const dur = 150
+    const dur = 160
     if (raf.current !== null) cancelAnimationFrame(raf.current)
     const step = (now: number) => {
       const t = Math.min(1, (now - start) / dur)
@@ -105,115 +133,9 @@ function useFingerTip(id: string | null, home: Point | null, target: Point | nul
   return pos
 }
 
-function splitFinger(f: FingerId): { hand: Hand; digit: Digit } {
-  const [h, d] = f.split('-') as [Hand, Digit]
-  return { hand: h, digit: d }
-}
-
-interface HandGeometry {
-  parts: Part[]
-  creases: string
-  /** exact path of every digit, so the glow can follow an active finger precisely */
-  limbs: Record<Digit, { d: string; w: number; base: Point; tip: Point }>
-}
-
-function buildHand(
-  hand: Hand,
-  keyRects: Map<string, Point>,
-  u: number,
-  homeY: number,
-  space: Point,
-  overrides: Partial<Record<Digit, Point>>,
-): HandGeometry | null {
-  const side = hand === 'L' ? 1 : -1 // +1 points toward the keyboard's center (the thumb side)
-  const rest = {} as Record<Finger, Point>
-  const knuckle0 = {} as Record<Finger, Point>
-
-  for (const f of FINGERS) {
-    const key = keyRects.get(HOME_KEY[hand][f])
-    if (!key) return null
-    rest[f] = { x: key.x, y: key.y + 0.1 * u }
-    knuckle0[f] = { x: key.x + side * KNUCKLE_SHIFT[f] * u, y: homeY + (KNUCKLE_Y + KNUCKLE_DROP[f]) * u }
-  }
-
-  // reaching far up (number row) moves the whole hand up instead of over-stretching one finger
-  let lift = 0
-  for (const f of FINGERS) {
-    const t = overrides[f]
-    if (t) lift = Math.min(lift, t.y + MAX_REACH * u - knuckle0[f].y)
-  }
-  const knuckle = {} as Record<Finger, Point>
-  for (const f of FINGERS) knuckle[f] = { x: knuckle0[f].x, y: knuckle0[f].y + lift }
-
-  const K = homeY + KNUCKLE_Y * u + lift
-  const kP = knuckle.pinky
-  const kI = knuckle.index
-  const cx = (kP.x + kI.x) / 2 + side * 0.1 * u
-  const at = (x: number, y: number): Point => ({ x, y })
-
-  // back of the hand + wrist as one rounded trapezoid (wide at the knuckles, narrower at the wrist)
-  const palm = roundedShape([
-    at(kP.x - side * 0.25 * u, kP.y - 0.35 * u),
-    at(knuckle.middle.x, knuckle.middle.y - 0.45 * u),
-    at(kI.x + side * 0.3 * u, kI.y - 0.35 * u),
-    at(kI.x + side * 0.42 * u, K + 0.3 * u),
-    at(kI.x + side * 0.34 * u, K + 1.35 * u),
-    at(cx + side * 0.8 * u, K + 2.4 * u),
-    at(cx + side * 0.7 * u, K + 3.8 * u),
-    at(cx - side * 0.8 * u, K + 3.8 * u),
-    at(cx - side * 0.9 * u, K + 2.4 * u),
-    at(kP.x - side * 0.6 * u, K + 1.2 * u),
-  ])
-  const parts: Part[] = [{ kind: 'shape', d: palm }]
-  const limbs = {} as HandGeometry['limbs']
-  let creases = ''
-
-  // webbing between neighbouring fingers: a small disc whose top forms the rounded U of the skin fold
-  for (let i = 0; i < FINGERS.length - 1; i++) {
-    const p = knuckle[FINGERS[i]]
-    const q = knuckle[FINGERS[i + 1]]
-    const wx = (p.x + q.x) / 2
-    const wy = Math.min(p.y, q.y) - 0.42 * u
-    parts.push({ kind: 'limb', d: `M ${wx} ${wy + 0.3 * u} L ${wx} ${wy + 0.31 * u}`, w: 0.62 * u })
-  }
-
-  const thumbBase = at(kI.x + side * 0.12 * u, K + 1.95 * u)
-  const thumbRest = at(kI.x + side * 1.05 * u, space.y + 0.05 * u + lift)
-
-  for (const digit of [...FINGERS, 'thumb'] as Digit[]) {
-    const isThumb = digit === 'thumb'
-    let tip = overrides[digit] ?? (isThumb ? thumbRest : rest[digit as Finger])
-    let base = isThumb ? thumbBase : knuckle[digit as Finger]
-    // idle fingers keep touching their home key; if the hand slid up they simply curl shorter
-    if (!isThumb && !overrides[digit] && tip.y > base.y - 0.45 * u) tip = at(tip.x, base.y - 0.45 * u)
-    // a finger reaching down past its knuckle would fold backwards – drop the knuckle instead
-    if (!isThumb && tip.y > base.y - 0.55 * u) base = at(base.x, tip.y + 0.55 * u)
-
-    const w = WIDTH[digit] * u
-    const bend = isThumb ? side * 0.18 * u : -side * 0.04 * u
-    const d = limbPath(base, tip, bend)
-    parts.push({ kind: 'limb', d, w })
-    // fingers are a little wider toward the knuckle than at the tip
-    const wide = { x: base.x + (tip.x - base.x) * 0.5, y: base.y + (tip.y - base.y) * 0.5 }
-    parts.push({ kind: 'limb', d: `M ${base.x} ${base.y} L ${wide.x} ${wide.y}`, w: w * 1.12 })
-    limbs[digit] = { d, w, base, tip }
-
-    // two faint joint creases, like the wrinkles over real finger joints
-    const dx = base.x - tip.x
-    const dy = base.y - tip.y
-    const len = Math.hypot(dx, dy) || 1
-    if (len > 0.9 * u) {
-      for (const t of isThumb ? [0.42] : [0.3, 0.6]) {
-        const mx = tip.x + dx * t
-        const my = tip.y + dy * t
-        const px = (-dy / len) * w * 0.22
-        const py = (dx / len) * w * 0.22
-        creases += `M ${mx - px} ${my - py} Q ${mx} ${my + 0.06 * u} ${mx + px} ${my + py} `
-      }
-    }
-  }
-
-  return { parts, creases, limbs }
+function splitFinger(f: FingerId): { hand: HandSide; part: HandPart } {
+  const [h, p] = f.split('-') as [HandSide, HandPart]
+  return { hand: h, part: p }
 }
 
 export default function HandsOverlay({ keyRects, nextChar }: Props) {
@@ -222,53 +144,108 @@ export default function HandsOverlay({ keyRects, nextChar }: Props) {
   const a = keyRects.get('a')
   const s = keyRects.get('s')
   const space = keyRects.get(' ')
-  const ready = !!(a && s && space)
+  const anchorL = keyRects.get(ANCHOR.L.key)
+  const anchorR = keyRects.get(ANCHOR.R.key)
+  const ready = !!(a && s && space && anchorL && anchorR)
   const u = ready ? Math.abs(s!.x - a!.x) : 0
   const homeY = ready ? a!.y : 0
+  const sx = u / REF_PITCH
+  const sy = ready ? (space!.y - homeY) / (REF_SPACE_Y - REF_HOME_Y) : 1
 
   // which finger(s) leave their resting place for the next character
   const letterFinger = nextChar ? fingerFor(nextChar) : null
-  const letterTarget = !nextChar ? null : nextChar === ' ' ? space ?? null : keyRects.get(nextChar.toLowerCase()) ?? null
-  const shiftTarget = nextChar && isShifted(nextChar) ? keyRects.get('shift') ?? null : null
-  const shiftFinger: FingerId = 'R-pinky'
+  const letterTarget = !nextChar || nextChar === ' ' ? null : keyRects.get(nextChar.toLowerCase()) ?? null
+  // shift is pressed by the pinky of the other hand
+  const shiftKey = nextChar ? shiftKeyFor(nextChar) : null
+  const shiftTarget = shiftKey ? keyRects.get(shiftKey) ?? null : null
+  const shiftFinger: FingerId = shiftKey === 'shiftL' ? 'L-pinky' : 'R-pinky'
 
   const homeOf = (f: FingerId | null): Point | null => {
     if (!f || !ready) return null
-    const { hand, digit } = splitFinger(f)
-    if (digit === 'thumb') return space ? { x: space.x, y: space.y } : null
-    const k = keyRects.get(HOME_KEY[hand][digit])
-    return k ? { x: k.x, y: k.y + 0.1 * u } : null
+    const { hand, part } = splitFinger(f)
+    if (part === 'thumb') return null
+    return keyRects.get(HOME_KEY[hand][part]) ?? null
   }
-
-  const letterTip = useFingerTip(
-    letterFinger,
-    homeOf(letterFinger),
-    letterTarget && letterFinger && !letterFinger.endsWith('thumb') ? { x: letterTarget.x, y: letterTarget.y + 0.08 * u } : null,
-  )
-  const shiftTip = useFingerTip(shiftTarget ? 'shift' : null, homeOf(shiftFinger), shiftTarget)
+  const letterTip = useFingerTip(letterFinger, homeOf(letterFinger), letterTarget)
+  const shiftTip = useFingerTip(shiftTarget ? shiftKey : null, homeOf(shiftFinger), shiftTarget)
 
   if (!ready || u < 4) return null
 
-  const overrides: Record<Hand, Partial<Record<Digit, Point>>> = { L: {}, R: {} }
-  const active: { hand: Hand; digit: Digit; color: string }[] = []
+  const toScreen = (hand: HandSide) => {
+    const anchor = hand === 'L' ? anchorL! : anchorR!
+    return (x: number, y: number): [number, number] => [anchor.x + (x - ANCHOR[hand].x) * sx, homeY + (y - REF_HOME_Y) * sy]
+  }
+  const toRef = (hand: HandSide, p: Point): Point => {
+    const anchor = hand === 'L' ? anchorL! : anchorR!
+    return { x: ANCHOR[hand].x + (p.x - anchor.x) / sx, y: REF_HOME_Y + (p.y - homeY) / sy }
+  }
+
+  // active fingers with their target in reference space
+  const reach: Record<HandSide, Partial<Record<HandPart, Point>>> = { L: {}, R: {} }
+  const active: { hand: HandSide; part: HandPart; target: Point | null }[] = []
   if (letterFinger) {
-    const { hand, digit } = splitFinger(letterFinger)
-    if (letterTip) overrides[hand][digit] = letterTip
-    if (letterTip || digit === 'thumb') active.push({ hand, digit, color: FINGER_COLOR[letterFinger] })
+    const { hand, part } = splitFinger(letterFinger)
+    if (part !== 'thumb' && letterTip) reach[hand][part] = toRef(hand, letterTip)
+    active.push({ hand, part, target: part === 'thumb' ? space! : letterTip })
   }
   if (shiftTip && letterFinger !== shiftFinger) {
-    overrides.R.pinky = shiftTip
-    active.push({ hand: 'R', digit: 'pinky', color: FINGER_COLOR[shiftFinger] })
+    const { hand } = splitFinger(shiftFinger)
+    reach[hand].pinky = toRef(hand, shiftTip)
+    active.push({ hand, part: 'pinky', target: shiftTip })
   }
 
-  const left = buildHand('L', keyRects, u, homeY, space!, overrides.L)
-  const right = buildHand('R', keyRects, u, homeY, space!, overrides.R)
-  if (!left || !right) return null
+  const fills: string[] = []
+  const strokes: { d: string; active: boolean }[] = []
+  for (const hand of ['L', 'R'] as HandSide[]) {
+    // the hand follows the longest reach part of the way (more for far keys and for keys the finger
+    // could only reach by turning sharply), so the finger itself never over-stretches or lies down flat
+    let shift: Point = { x: 0, y: 0 }
+    let longest = 0
+    for (const f of FINGERS) {
+      const t = reach[hand][f]
+      if (!t) continue
+      const T = TIP[hand][f]
+      const B = BASE[hand][f]
+      const dx = t.x - T.x
+      const dy = t.y - T.y
+      if (Math.hypot(dx, dy) <= longest) continue
+      longest = Math.hypot(dx, dy)
+      let k = handFollow(longest)
+      for (; k < MAX_FOLLOW; k += 0.04) {
+        const turn = Math.atan2(t.y - dy * k - B.y, t.x - dx * k - B.x) - Math.atan2(T.y - B.y, T.x - B.x)
+        if (Math.abs(turn) <= MAX_TURN) break
+      }
+      shift = { x: dx * k, y: dy * k }
+    }
+    const base = toScreen(hand)
+    const map = (x: number, y: number) => base(x + shift.x, y + shift.y)
 
-  const parts = [...left.parts, ...right.parts]
-  const creases = left.creases + right.creases
-  const fadeStart = homeY + 3.1 * u
-  const fadeEnd = homeY + 4.9 * u
+    const shaped = (part: HandPart, pts: Pts) => {
+      if (!longest) return pts
+      const T = TIP[hand][part]
+      const t = reach[hand][part]
+      const pin = part === 'thumb' ? 0.3 : PIN
+      const goal = t ? { x: t.x - shift.x, y: t.y - shift.y } : { x: T.x - pin * shift.x, y: T.y - pin * shift.y }
+      return bend(pts, BASE[hand][part], T, goal)
+    }
+
+    fills.push(toPath(HAND_FILLS[hand].palm, map, true))
+    for (const line of HAND_STROKES[hand].palm) strokes.push({ d: toPath(line, map), active: false })
+    for (const part of [...FINGERS, 'thumb'] as HandPart[]) {
+      fills.push(toPath(shaped(part, HAND_FILLS[hand][part]), map, true))
+      const isActive = active.some((f) => f.hand === hand && f.part === part)
+      for (const line of HAND_STROKES[hand][part]) strokes.push({ d: toPath(shaped(part, line), map), active: isActive })
+      // a contour line shared with a neighbour belongs to both fingers – once one of them moves, both draw it
+      const borrowed = BORROW[hand][part]
+      if (borrowed && (reach[hand][part] || reach[hand][borrowed[0]])) {
+        strokes.push({ d: toPath(shaped(part, HAND_STROKES[hand][borrowed[0]][borrowed[1]]), map), active: isActive })
+      }
+    }
+  }
+
+  const stroke = Math.max(1.4, 3.4 * sx)
+  const fadeStart = homeY + 3.2 * u
+  const fadeEnd = homeY + 5 * u
   const big = { x: -4000, y: -4000, width: 10000, height: 10000 }
 
   return (
@@ -280,11 +257,6 @@ export default function HandsOverlay({ keyRects, nextChar }: Props) {
       aria-hidden="true"
     >
       <defs>
-        {/* outline = slightly grown silhouette minus the silhouette itself → one clean contour around the whole hand */}
-        <mask id={`${uid}o`} maskUnits="userSpaceOnUse" {...big}>
-          {renderParts(parts, 'outer', 'white')}
-          {renderParts(parts, 'inner', 'black')}
-        </mask>
         <linearGradient id={`${uid}fg`} gradientUnits="userSpaceOnUse" x1={0} y1={fadeStart} x2={0} y2={fadeEnd}>
           <stop offset="0" stopColor="white" />
           <stop offset="1" stopColor="black" />
@@ -292,36 +264,43 @@ export default function HandsOverlay({ keyRects, nextChar }: Props) {
         <mask id={`${uid}f`} maskUnits="userSpaceOnUse" {...big}>
           <rect {...big} fill={`url(#${uid}fg)`} />
         </mask>
-        {active.map((f, i) => {
-          const l = (f.hand === 'L' ? left : right).limbs[f.digit]
-          return (
-            <linearGradient key={i} id={`${uid}g${i}`} gradientUnits="userSpaceOnUse" x1={l.tip.x} y1={l.tip.y} x2={l.base.x} y2={l.base.y}>
-              <stop offset="0" stopColor={f.color} stopOpacity="0.55" />
-              <stop offset="0.4" stopColor={f.color} stopOpacity="0.2" />
-              <stop offset="1" stopColor={f.color} stopOpacity="0" />
-            </linearGradient>
-          )
-        })}
       </defs>
 
-      {/* light from the key spilling out around the fingertip */}
-      {active.map((f, i) => {
-        const l = (f.hand === 'L' ? left : right).limbs[f.digit]
-        return <circle key={`h${i}`} cx={l.tip.x} cy={l.tip.y} r={0.75 * u} fill={f.color} opacity={0.2} />
-      })}
-
       <g mask={`url(#${uid}f)`}>
-        {/* translucent skin – one group so overlapping parts don't stack up darker */}
-        <g opacity={0.08}>{renderParts(parts, 'inner', SKIN)}</g>
+        {/* faint skin tone, drawn as one group so overlapping finger shapes don't stack up darker */}
+        <g opacity={0.04}>
+          {fills.map((d, i) => (
+            <path key={i} d={d} fill={SKIN} />
+          ))}
+        </g>
 
-        {/* the key shining up through the active finger */}
-        {active.map((f, i) => {
-          const l = (f.hand === 'L' ? left : right).limbs[f.digit]
-          return <path key={`g${i}`} d={l.d} fill="none" stroke={`url(#${uid}g${i})`} strokeWidth={l.w} strokeLinecap="round" />
-        })}
+        {/* soft rings of light around the key that has to be pressed */}
+        {active.map((f, i) =>
+          f.target ? (
+            <g key={`r${i}`} fill={HAND_ACCENT}>
+              <circle cx={f.target.x} cy={f.target.y} r={1.08 * u} opacity={0.07} />
+              <circle cx={f.target.x} cy={f.target.y} r={0.8 * u} opacity={0.08} />
+              <circle cx={f.target.x} cy={f.target.y} r={0.56 * u} opacity={0.1} />
+            </g>
+          ) : null,
+        )}
 
-        <rect {...big} fill={SKIN} opacity={0.5} mask={`url(#${uid}o)`} />
-        <path d={creases} stroke={SKIN} strokeOpacity={0.25} strokeWidth={1.1} strokeLinecap="round" fill="none" />
+        {strokes
+          .filter((s) => !s.active)
+          .map((s, i) => (
+            <path key={`s${i}`} d={s.d} fill="none" stroke={SKIN} strokeOpacity={0.36} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" />
+          ))}
+        {/* a thin halo in the panel colour keeps the blue finger readable where it lies on the blue key */}
+        {strokes
+          .filter((s) => s.active)
+          .map((s, i) => (
+            <path key={`h${i}`} d={s.d} fill="none" stroke="var(--kb-panel-bg)" strokeOpacity={0.75} strokeWidth={stroke * 2.6} strokeLinecap="round" strokeLinejoin="round" />
+          ))}
+        {strokes
+          .filter((s) => s.active)
+          .map((s, i) => (
+            <path key={`a${i}`} d={s.d} fill="none" stroke={HAND_ACCENT} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" />
+          ))}
       </g>
     </svg>
   )

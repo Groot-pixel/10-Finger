@@ -123,6 +123,12 @@ export function isShifted(char: string): boolean {
   return false
 }
 
+/** 10-finger rule: shift is pressed by the pinky of the *other* hand. Returns the data-key of that shift key. */
+export function shiftKeyFor(char: string): 'shiftL' | 'shift' | null {
+  if (!isShifted(char)) return null
+  return fingerFor(char).startsWith('R') ? 'shiftL' : 'shift'
+}
+
 export const HAND_OF: Record<FingerId, 'L' | 'R'> = {
   'L-pinky': 'L', 'L-ring': 'L', 'L-middle': 'L', 'L-index': 'L', 'L-thumb': 'L',
   'R-thumb': 'R', 'R-index': 'R', 'R-middle': 'R', 'R-ring': 'R', 'R-pinky': 'R',
