@@ -1,14 +1,21 @@
 import { useRef } from 'react'
-import { KEY_ROWS, shiftKeyFor, type KeyDef } from '../data/keyboard'
+import { FINGER_COLOR, KEY_ROWS, shiftKeyFor, type KeyDef } from '../data/keyboard'
 import { useKeyRects } from '../hooks/useKeyRects'
-import HandsOverlay, { HAND_ACCENT } from './HandsOverlay'
+import HandsOverlay from './HandsOverlay'
+
+/** dark lettering on the light finger colours (yellow, green, cyan …), white on the darker ones */
+function textOn(hex: string): string {
+  const n = parseInt(hex.slice(1), 16)
+  const lum = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255
+  return lum > 0.62 ? '#10231a' : '#ffffff'
+}
 
 interface Props {
   nextChar: string | null
 }
 
 function Key({ k, active }: { k: KeyDef; active: boolean }) {
-  const color = HAND_ACCENT
+  const color = FINGER_COLOR[k.finger]
   return (
     <div
       data-key={k.base}
@@ -16,7 +23,7 @@ function Key({ k, active }: { k: KeyDef; active: boolean }) {
       style={{
         borderColor: active ? color : 'var(--kb-border)',
         background: active ? color : 'var(--kb-key-bg)',
-        color: active ? '#ffffff' : 'var(--kb-key-fg)',
+        color: active ? textOn(color) : 'var(--kb-key-fg)',
         boxShadow: active ? 'none' : '0 2px 0 0 var(--kb-key-shadow)',
         transform: active ? 'translateY(1px)' : 'none',
       }}
@@ -28,14 +35,16 @@ function Key({ k, active }: { k: KeyDef; active: boolean }) {
 }
 
 function ShiftKey({ id, active }: { id: 'shiftL' | 'shift'; active: boolean }) {
+  // pressed by the pinky of that side
+  const color = FINGER_COLOR[id === 'shiftL' ? 'L-pinky' : 'R-pinky']
   return (
     <div
       data-key={id}
       className="flex h-9 w-[13%] items-center justify-center rounded-md border text-[10px] font-bold sm:h-12 sm:rounded-lg sm:text-[11px]"
       style={{
-        borderColor: active ? HAND_ACCENT : 'var(--kb-border)',
-        background: active ? HAND_ACCENT : 'var(--kb-key-bg)',
-        color: active ? '#ffffff' : 'var(--kb-key-fg)',
+        borderColor: active ? color : 'var(--kb-border)',
+        background: active ? color : 'var(--kb-key-bg)',
+        color: active ? textOn(color) : 'var(--kb-key-fg)',
         boxShadow: active ? 'none' : '0 2px 0 0 var(--kb-key-shadow)',
       }}
     >
@@ -70,8 +79,8 @@ export default function Keyboard({ nextChar }: Props) {
             data-key=" "
             className="h-9 flex-1 rounded-md border sm:h-12 sm:rounded-lg"
             style={{
-              borderColor: nextChar === ' ' ? HAND_ACCENT : 'var(--kb-border)',
-              background: nextChar === ' ' ? HAND_ACCENT : 'var(--kb-key-bg)',
+              borderColor: nextChar === ' ' ? FINGER_COLOR['L-thumb'] : 'var(--kb-border)',
+              background: nextChar === ' ' ? FINGER_COLOR['L-thumb'] : 'var(--kb-key-bg)',
               boxShadow: nextChar === ' ' ? 'none' : '0 2px 0 0 var(--kb-key-shadow)',
             }}
           />
