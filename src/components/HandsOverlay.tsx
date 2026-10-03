@@ -76,21 +76,21 @@ const BORROW: Record<HandSide, Partial<Record<HandPart, [HandPart, number]>>> = 
 }
 
 /**
- * The traced fingers are drawn very wide (wider than a key). Each finger is slimmed towards its own
- * centre line (root → top, reference pixels) by `n` (n > 1 widens); the effect fades in above the knuckles so the
- * fingers still grow out of one palm.
+ * The traced fingers are drawn very wide. Each finger's upper half is slimmed towards its own centre
+ * line (root → top, reference pixels) by `n`. The lower half stays as drawn, so neighbouring fingers
+ * keep sharing one contour line there and only part slightly at the fingertips, like in the drawing.
  */
 const SLIM: Record<HandSide, Partial<Record<HandPart, { top: Point; root: Point; n: number }>>> = {
   L: {
-    ring: { top: { x: 318, y: 258 }, root: { x: 197, y: 498 }, n: 0.8 },
-    middle: { top: { x: 405, y: 258 }, root: { x: 292, y: 487 }, n: 0.74 },
-    index: { top: { x: 487, y: 259 }, root: { x: 395, y: 538 }, n: 0.76 },
+    ring: { top: { x: 318, y: 258 }, root: { x: 197, y: 498 }, n: 0.86 },
+    middle: { top: { x: 405, y: 258 }, root: { x: 292, y: 487 }, n: 0.84 },
+    index: { top: { x: 487, y: 259 }, root: { x: 395, y: 538 }, n: 0.84 },
   },
   R: {
-    index: { top: { x: 742, y: 254 }, root: { x: 765, y: 551 }, n: 0.74 },
-    middle: { top: { x: 817, y: 245 }, root: { x: 861, y: 519 }, n: 0.7 },
-    ring: { top: { x: 895, y: 252 }, root: { x: 944, y: 501 }, n: 0.76 },
-    pinky: { top: { x: 970, y: 265 }, root: { x: 1015, y: 509 }, n: 0.88 },
+    index: { top: { x: 742, y: 254 }, root: { x: 765, y: 551 }, n: 0.84 },
+    middle: { top: { x: 817, y: 245 }, root: { x: 861, y: 519 }, n: 0.82 },
+    ring: { top: { x: 895, y: 252 }, root: { x: 944, y: 501 }, n: 0.84 },
+    pinky: { top: { x: 970, y: 265 }, root: { x: 1015, y: 509 }, n: 0.9 },
   },
 }
 
@@ -105,7 +105,7 @@ function slim(pts: Pts, hand: HandSide, part: HandPart): Pts {
     const px = pts[i] - s.root.x
     const py = pts[i + 1] - s.root.y
     const t = (px * ax + py * ay) / L2
-    const u = Math.min(1, Math.max(0, t / 0.4))
+    const u = Math.min(1, Math.max(0, (t - 0.6) / 0.4))
     const k = (1 - s.n) * u * u * (3 - 2 * u)
     // pull the point towards the centre line by k
     out[i] = pts[i] - k * (px - t * ax)
@@ -114,25 +114,38 @@ function slim(pts: Pts, hand: HandSide, part: HandPart): Pts {
   return out
 }
 
-/**
- * A clean, rounded finger outline (one U-shaped line) from its root to the centre of its tip.
- * Used for the left pinky, which the drawing hides almost completely behind the ring finger.
- */
+/** the same line, resampled to `n` points evenly spaced along its length */
+function resample(pts: Pts, n: number): Pts {
+  const seg: number[] = [0]
+  for (let i = 2; i < pts.length; i += 2) seg.push(seg[seg.length - 1] + Math.hypot(pts[i] - pts[i - 2], pts[i + 1] - pts[i - 1]))
+  const total = seg[seg.length - 1]
+  const out: Pts = []
+  let j = 0
+  for (let k = 0; k < n; k++) {
+    const d = (total * k) / (n - 1)
+    while (j < seg.length - 2 && seg[j + 1] < d) j++
+    const f = seg[j + 1] > seg[j] ? (d - seg[j]) / (seg[j + 1] - seg[j]) : 0
+    out.push(pts[2 * j] + (pts[2 * j + 2] - pts[2 * j]) * f, pts[2 * j + 1] + (pts[2 * j + 3] - pts[2 * j + 1]) * f)
+  }
+  return out
+}
+
+/** a clean, rounded finger outline (one U-shaped line, inner side → tip → outer side) */
 function fingerOutline(root: Point, tip: Point, halfRoot: number, halfTip: number): Pts {
   const ax = tip.x - root.x
   const ay = tip.y - root.y
   const len = Math.hypot(ax, ay)
   const dx = ax / len
   const dy = ay / len
-  const nx = -dy // normal pointing to the finger's left side
+  const nx = -dy
   const ny = dx
-  const left: Pts = []
-  const right: Pts = []
+  const inner: Pts = []
+  const outer: Pts = []
   for (let i = 0; i <= 12; i++) {
     const t = -0.08 + (1.08 * i) / 12
     const h = halfRoot + (halfTip - halfRoot) * Math.max(0, t)
-    left.push(root.x + ax * t + nx * h, root.y + ay * t + ny * h)
-    right.push(root.x + ax * t - nx * h, root.y + ay * t - ny * h)
+    inner.push(root.x + ax * t + nx * h, root.y + ay * t + ny * h)
+    outer.push(root.x + ax * t - nx * h, root.y + ay * t - ny * h)
   }
   const cap: Pts = []
   for (let i = 1; i < 10; i++) {
@@ -140,20 +153,32 @@ function fingerOutline(root: Point, tip: Point, halfRoot: number, halfTip: numbe
     cap.push(tip.x + nx * halfTip * Math.cos(a) + dx * halfTip * Math.sin(a), tip.y + ny * halfTip * Math.cos(a) + dy * halfTip * Math.sin(a))
   }
   const back: Pts = []
-  for (let i = right.length - 2; i >= 0; i -= 2) back.push(right[i], right[i + 1])
-  return [...left, ...cap, ...back]
+  for (let i = outer.length - 2; i >= 0; i -= 2) back.push(outer[i], outer[i + 1])
+  return [...inner, ...cap, ...back]
 }
-const PINKY_L = fingerOutline({ x: 136, y: 508 }, { x: 233, y: 292 }, 21, 19)
+
+/**
+ * The left pinky: at rest exactly as drawn (half hidden next to the ring finger), but once it leaves
+ * its key it turns into a clean, whole finger – the drawn one is too thin to move on its own.
+ */
+const reversed = (pts: Pts): Pts => {
+  const out: Pts = []
+  for (let i = pts.length - 2; i >= 0; i -= 2) out.push(pts[i], pts[i + 1])
+  return out
+}
+const PINKY_N = 64
+const PINKY_DRAWN = resample([...reversed(HAND_STROKES.L.ring[1]), ...reversed(HAND_STROKES.L.pinky[1]), ...HAND_STROKES.L.pinky[0]], PINKY_N)
+const PINKY_CLEAN = resample(fingerOutline({ x: 136, y: 508 }, { x: 233, y: 292 }, 21, 19), PINKY_N)
+function leftPinky(reach: number): Pts {
+  const m = Math.min(1, reach / 45)
+  return PINKY_DRAWN.map((v, i) => v + (PINKY_CLEAN[i] - v) * m)
+}
 
 /** the slimmed rest shape of every finger: its own lines plus the line it shares with a neighbour */
 const SHAPES: Record<HandSide, Record<HandPart, { strokes: Pts[]; fill: Pts }>> = (() => {
   const res = { L: {}, R: {} } as Record<HandSide, Record<HandPart, { strokes: Pts[]; fill: Pts }>>
   for (const hand of ['L', 'R'] as HandSide[]) {
     for (const part of ['pinky', 'ring', 'middle', 'index', 'thumb'] as HandPart[]) {
-      if (hand === 'L' && part === 'pinky') {
-        res.L.pinky = { strokes: [PINKY_L], fill: PINKY_L }
-        continue
-      }
       const lines = [...HAND_STROKES[hand][part]]
       const borrowed = BORROW[hand][part]
       if (borrowed) lines.push(HAND_STROKES[hand][borrowed[0]][borrowed[1]])
@@ -283,8 +308,7 @@ export default function HandsOverlay({ keyRects, nextChar }: Props) {
   }
 
   const fills: string[] = []
-  const strokes: { d: string; color: string | null; behind?: boolean }[] = []
-  let ringL = ''
+  const strokes: { d: string; color: string | null }[] = []
   for (const hand of ['L', 'R'] as HandSide[]) {
     // the hand follows the longest reach part of the way (more for far keys and for keys the finger
     // could only reach by turning sharply), so the finger itself never over-stretches or lies down flat
@@ -324,14 +348,15 @@ export default function HandsOverlay({ keyRects, nextChar }: Props) {
     fills.push(toPath(HAND_FILLS[hand].palm, map, true))
     for (const line of HAND_STROKES[hand].palm) strokes.push({ d: toPath(line, map), color: null })
     for (const part of [...FINGERS, 'thumb'] as HandPart[]) {
-      const shape = SHAPES[hand][part]
-      const fill = toPath(shaped(part, shape.fill), map, true)
-      fills.push(fill)
-      if (hand === 'L' && part === 'ring') ringL = fill
+      let shape = SHAPES[hand][part]
+      if (hand === 'L' && part === 'pinky') {
+        const t = reach.L.pinky
+        const outline = leftPinky(t ? Math.hypot(t.x - TIP.L.pinky.x, t.y - TIP.L.pinky.y) : 0)
+        shape = { strokes: [outline], fill: outline }
+      }
+      fills.push(toPath(shaped(part, shape.fill), map, true))
       const color = active.find((f) => f.hand === hand && f.part === part)?.color ?? null
-      // the left pinky lies behind the ring finger
-      const behind = hand === 'L' && part === 'pinky'
-      for (const line of shape.strokes) strokes.push({ d: toPath(shaped(part, line), map), color, behind })
+      for (const line of shape.strokes) strokes.push({ d: toPath(shaped(part, line), map), color })
     }
   }
 
@@ -356,10 +381,6 @@ export default function HandsOverlay({ keyRects, nextChar }: Props) {
         <mask id={`${uid}f`} maskUnits="userSpaceOnUse" {...big}>
           <rect {...big} fill={`url(#${uid}fg)`} />
         </mask>
-        <mask id={`${uid}b`} maskUnits="userSpaceOnUse" {...big}>
-          <rect {...big} fill="white" />
-          <path d={ringL} fill="black" stroke="black" strokeWidth={stroke * 0.6} />
-        </mask>
       </defs>
 
       <g mask={`url(#${uid}f)`}>
@@ -381,21 +402,24 @@ export default function HandsOverlay({ keyRects, nextChar }: Props) {
           ) : null,
         )}
 
-        {strokes
-          .filter((s) => !s.color)
-          .map((s, i) => (
-            <path key={`s${i}`} mask={s.behind ? `url(#${uid}b)` : undefined} d={s.d} fill="none" stroke={SKIN} strokeOpacity={0.36} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" />
-          ))}
+        {/* one group, so a contour line shared by two fingers (drawn by both) doesn't get darker */}
+        <g opacity={0.36}>
+          {strokes
+            .filter((s) => !s.color)
+            .map((s, i) => (
+              <path key={`s${i}`} d={s.d} fill="none" stroke={SKIN} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" />
+            ))}
+        </g>
         {/* a thin halo in the panel colour keeps the finger readable where it lies on its (same-coloured) key */}
         {strokes
           .filter((s) => s.color)
           .map((s, i) => (
-            <path key={`h${i}`} mask={s.behind ? `url(#${uid}b)` : undefined} d={s.d} fill="none" stroke="var(--kb-panel-bg)" strokeOpacity={0.6} strokeWidth={stroke * 2.2} strokeLinecap="round" strokeLinejoin="round" />
+            <path key={`h${i}`} d={s.d} fill="none" stroke="var(--kb-panel-bg)" strokeOpacity={0.6} strokeWidth={stroke * 2.2} strokeLinecap="round" strokeLinejoin="round" />
           ))}
         {strokes
           .filter((s) => s.color)
           .map((s, i) => (
-            <path key={`a${i}`} mask={s.behind ? `url(#${uid}b)` : undefined} d={s.d} fill="none" stroke={s.color!} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" />
+            <path key={`a${i}`} d={s.d} fill="none" stroke={s.color!} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" />
           ))}
       </g>
     </svg>
