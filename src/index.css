@@ -144,3 +144,50 @@ body::before {
 .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
 .btn-press:active { transform: translateY(2px); }
+
+/* ---- learning path ---- */
+.path-node {
+  transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+}
+.path-node:hover {
+  filter: brightness(1.05);
+}
+.path-node:active {
+  transform: translateY(5px);
+  box-shadow: 0 2px 0 var(--edge) !important;
+}
+/* turn a colourful icon into a white (or grey, when locked) glyph on a path button */
+.icon-white {
+  filter: brightness(0) invert(1) drop-shadow(0 2px 0 rgba(0, 0, 0, 0.12));
+}
+.icon-locked {
+  filter: grayscale(1) brightness(1.05) opacity(0.45);
+}
+@keyframes bubble-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+.bubble-bob { animation: bubble-bob 1.6s ease-in-out infinite; }
+
+/* chunky 3D button, Duolingo style */
+.btn-3d {
+  border-radius: 16px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  box-shadow: 0 4px 0 var(--btn-edge, rgba(0, 0, 0, 0.2));
+  transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.12s ease;
+}
+.btn-3d:hover:not(:disabled) { filter: brightness(1.06); }
+.btn-3d:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 0 0 var(--btn-edge, rgba(0, 0, 0, 0.2)); }
+.btn-3d:disabled { filter: grayscale(0.6); opacity: 0.55; cursor: not-allowed; }
+
+/* card with a thicker bottom border, Duolingo style */
+.tile {
+  border: 2px solid var(--border);
+  border-bottom-width: 4px;
+  background: var(--bg-elevated);
+  border-radius: 18px;
+}
+.tile-hover { transition: transform 0.12s ease, border-color 0.12s ease; }
+.tile-hover:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--primary) 40%, var(--border)); }

@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { useStore } from '../store/useStore'
 import { LEAGUES, computeLeagueBoard, PROMOTE_COUNT, DEMOTE_COUNT, weekFractionElapsed } from '../data/league'
 import Mascot from '../components/Mascot'
+import Icon from '../components/Icon'
+import { Avatar, LeagueBadge} from '../components/Art'
+import { shade } from '../utils/color'
 
 function formatCountdown(weekStartISO: string): string {
   const start = new Date(weekStartISO + 'T00:00:00Z').getTime()
@@ -35,57 +38,113 @@ export default function LeaguePage() {
   )
   const fraction = weekFractionElapsed(weekStartISO)
 
+  const top3 = board.slice(0, 3)
+  const podium = [top3[1], top3[0], top3[2]].filter(Boolean)
+  const playerRank = board.findIndex((e) => e.isPlayer) + 1
+
   return (
     <div className="mx-auto max-w-xl px-4 py-8">
       {banner && (
         <div
-          className="pop-in mb-6 flex items-center gap-3 rounded-2xl border-2 p-4"
-          style={{ borderColor: banner.promoted ? '#22c55e' : '#ef4444', background: 'var(--bg-elevated)' }}
+          className="pop-in tile mb-6 flex items-center gap-3 p-4"
+          style={{ borderColor: banner.promoted ? '#58cc02' : '#ff4b4b' }}
         >
           <Mascot mood={banner.promoted ? 'excited' : 'sad'} size={56} />
           <div className="flex-1">
             <div className="font-extrabold">
-              {banner.promoted ? `Aufstieg in die ${banner.leagueName}-Liga! ${banner.leagueIcon}` : `Abstieg in die ${banner.leagueName}-Liga`}
+              {banner.promoted ? `Aufstieg in die ${banner.leagueName}-Liga!` : `Abstieg in die ${banner.leagueName}-Liga`}
             </div>
             <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Eine neue Woche beginnt jetzt!</div>
           </div>
-          <button onClick={dismissBanner} className="text-lg">✕</button>
+          <button onClick={dismissBanner} className="rounded-lg p-1 opacity-50 hover:opacity-100" aria-label="Schließen">
+            <Icon name="close" size={18} />
+          </button>
         </div>
       )}
 
-      <div className="mb-6 rounded-2xl p-5 text-center text-white shadow" style={{ background: `linear-gradient(135deg, ${league.color}, ${league.color}bb)` }}>
-        <div className="text-4xl">{league.icon}</div>
-        <div className="text-xl font-extrabold">{league.name}</div>
-        <div className="text-sm opacity-90">Nächste Woche in {formatCountdown(weekStartISO)}</div>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/30">
-          <div className="h-full bg-white" style={{ width: `${Math.round(fraction * 100)}%` }} />
-        </div>
+      {/* all leagues as a row of crests, the current one big */}
+      <div className="mb-3 flex items-end justify-center gap-1 overflow-x-auto pb-1 scrollbar-thin">
+        {LEAGUES.map((l, i) => (
+          <div key={l.id} className="flex shrink-0 flex-col items-center" title={l.name}>
+            <LeagueBadge index={i} size={i === divisionIndex ? 64 : 30} locked={i > divisionIndex} />
+          </div>
+        ))}
+      </div>
+      <div className="mb-1 text-center text-2xl font-black">{league.name}</div>
+      <div className="mb-1 text-center text-sm font-semibold" style={{ color: 'var(--text-muted)' }}>
+        Die besten {PROMOTE_COUNT} steigen in die nächste Liga auf
+      </div>
+      <div className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-full px-3 py-1 text-sm font-extrabold" style={{ background: 'var(--kb-key-bg)', color: '#ff9600' }}>
+        <Icon name="clock" size={18} /> noch {formatCountdown(weekStartISO)}
+        <span className="ml-1 h-2 w-16 overflow-hidden rounded-full" style={{ background: 'var(--border)' }}>
+          <span className="block h-full rounded-full" style={{ width: `${Math.round(fraction * 100)}%`, background: '#ff9600' }} />
+        </span>
       </div>
 
-      <ol className="flex flex-col gap-1.5">
+      {/* podium */}
+      <div className="mb-6 flex items-end justify-center gap-3">
+        {podium.map((e) => {
+          const place = top3.indexOf(e) + 1
+          const h = place === 1 ? 92 : place === 2 ? 68 : 52
+          const color = place === 1 ? '#ffc800' : place === 2 ? '#c4ccd4' : '#d08a4b'
+          return (
+            <div key={e.name} className="flex w-28 flex-col items-center">
+              {place === 1 && <Icon name="crown" size={28} />}
+              <div className="relative">
+                <Avatar name={e.name} size={place === 1 ? 58 : 48} />
+                {e.isPlayer && <span className="absolute -bottom-1 -right-1 rounded-full bg-white px-1 text-[9px] font-black text-emerald-600 shadow">DU</span>}
+              </div>
+              <div className="mt-1 w-full truncate text-center text-xs font-extrabold">{e.name}</div>
+              <div className="text-[11px] font-bold" style={{ color: 'var(--text-muted)' }}>{e.xp} EP</div>
+              <div
+                className="mt-1 flex w-full items-start justify-center rounded-t-xl pt-1.5 text-2xl font-black text-white"
+                style={{ height: h, background: `linear-gradient(180deg, ${color}, ${shade(color, -0.18)})`, boxShadow: `inset 0 4px 0 ${shade(color, 0.3)}` }}
+              >
+                {place}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <ol className="tile flex flex-col overflow-hidden p-2">
         {board.map((entry, i) => {
           const rank = i + 1
-          const zone = rank <= PROMOTE_COUNT ? 'promote' : rank > board.length - DEMOTE_COUNT ? 'demote' : 'safe'
+          const promoteLine = rank === PROMOTE_COUNT + 1
+          const demoteLine = divisionIndex > 0 && rank === board.length - DEMOTE_COUNT + 1
           return (
-            <li
-              key={entry.name}
-              className="flex items-center gap-3 rounded-xl border px-3 py-2"
-              style={{
-                borderColor: entry.isPlayer ? 'var(--primary)' : 'var(--border)',
-                background: entry.isPlayer ? 'color-mix(in srgb, var(--primary) 12%, var(--bg-elevated))' : 'var(--bg-elevated)',
-              }}
-            >
-              <span className="w-6 text-center font-extrabold" style={{ color: 'var(--text-muted)' }}>
-                {rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : rank}
-              </span>
-              <span className="flex-1 truncate font-bold">{entry.isPlayer ? `${entry.name} (Du)` : entry.name}</span>
-              <span className="font-extrabold" style={{ color: 'var(--primary-dark)' }}>{entry.xp} EP</span>
-              {zone === 'promote' && <span title="Aufstiegszone" className="text-emerald-500">▲</span>}
-              {zone === 'demote' && divisionIndex > 0 && <span title="Abstiegszone" className="text-rose-500">▼</span>}
+            <li key={entry.name}>
+              {promoteLine && <ZoneLine color="#58cc02" icon="chevron" text="Aufstiegszone" up />}
+              {demoteLine && <ZoneLine color="#ff4b4b" icon="chevron" text="Abstiegszone" />}
+              <div
+                className="flex items-center gap-3 rounded-xl px-2 py-2"
+                style={{ background: entry.isPlayer ? 'color-mix(in srgb, #58cc02 14%, var(--bg-elevated))' : 'transparent' }}
+              >
+                <span className="w-7 text-center text-sm font-black" style={{ color: rank <= 3 ? ['#e5a400', '#9aa5ad', '#b8733a'][rank - 1] : rank <= PROMOTE_COUNT ? '#58a700' : 'var(--text-muted)' }}>
+                  {rank}
+                </span>
+                <Avatar name={entry.name} size={36} />
+                <span className="flex-1 truncate font-bold">{entry.isPlayer ? `${entry.name} (Du)` : entry.name}</span>
+                <span className="text-sm font-extrabold" style={{ color: 'var(--text-muted)' }}>{entry.xp} EP</span>
+              </div>
             </li>
           )
         })}
       </ol>
+      <p className="mt-3 text-center text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>
+        Du bist gerade auf Platz {playerRank}. Jede Lektion bringt EP für die Liga.
+      </p>
+    </div>
+  )
+}
+
+function ZoneLine({ color, text, up }: { color: string; icon: string; text: string; up?: boolean }) {
+  return (
+    <div className="my-1.5 flex items-center gap-2 px-2 text-[11px] font-extrabold uppercase tracking-wider" style={{ color }}>
+      <span className="h-0.5 flex-1 rounded" style={{ background: color, opacity: 0.4 }} />
+      <span style={{ transform: up ? 'rotate(-90deg)' : 'rotate(90deg)', display: 'inline-flex' }}><Icon name="chevron" size={14} /></span>
+      {text}
+      <span className="h-0.5 flex-1 rounded" style={{ background: color, opacity: 0.4 }} />
     </div>
   )
 }

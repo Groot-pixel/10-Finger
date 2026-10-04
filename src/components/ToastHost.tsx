@@ -1,4 +1,5 @@
 import { useStore } from '../store/useStore'
+import Icon from './Icon'
 
 const TONE_BG: Record<string, string> = {
   success: 'var(--primary)',
@@ -17,10 +18,10 @@ export default function ToastHost() {
         <div
           key={t.id}
           onClick={() => dismissToast(t.id)}
-          className="toast-in pointer-events-auto flex cursor-pointer items-start gap-3 rounded-xl border p-3 shadow-lg"
+          className="toast-in pointer-events-auto flex cursor-pointer items-start gap-3 rounded-2xl border-2 p-3 shadow-lg"
           style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', borderLeft: `5px solid ${TONE_BG[t.tone]}` }}
         >
-          <span className="text-2xl">{t.icon}</span>
+          <Icon name={t.icon} size={30} />
           <div className="flex flex-col">
             <span className="text-sm font-bold">{t.title}</span>
             {t.subtitle && <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{t.subtitle}</span>}

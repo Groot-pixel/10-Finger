@@ -1,12 +1,14 @@
 import { useStore } from '../../store/useStore'
 import type { ViewKind } from '../../types'
+import Icon from '../Icon'
 
 const ITEMS: { view: ViewKind; label: string; icon: string }[] = [
-  { view: 'path', label: 'Pfad', icon: '🗺️' },
-  { view: 'practice', label: 'Übung', icon: '🎯' },
-  { view: 'league', label: 'Liga', icon: '🏆' },
-  { view: 'quests', label: 'Ziele', icon: '📋' },
-  { view: 'profile', label: 'Profil', icon: '🦎' },
+  { view: 'path', label: 'Pfad', icon: 'map' },
+  { view: 'practice', label: 'Übung', icon: 'dumbbell' },
+  { view: 'league', label: 'Liga', icon: 'trophy' },
+  { view: 'quests', label: 'Ziele', icon: 'quests' },
+  { view: 'shop', label: 'Shop', icon: 'shop' },
+  { view: 'profile', label: 'Profil', icon: 'profile' },
 ]
 
 export default function BottomNav() {
@@ -15,20 +17,27 @@ export default function BottomNav() {
 
   return (
     <nav
-      className="sticky bottom-0 z-30 flex items-center justify-around border-t px-1 py-1.5 lg:hidden"
+      className="sticky bottom-0 z-30 flex items-center justify-around border-t-2 px-1 py-1.5 lg:hidden"
       style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)' }}
     >
-      {ITEMS.map((item) => (
-        <button
-          key={item.view}
-          onClick={() => setView(item.view)}
-          className="flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px] font-bold"
-          style={{ color: view === item.view ? 'var(--primary-dark)' : 'var(--text-muted)' }}
-        >
-          <span className="text-xl">{item.icon}</span>
-          {item.label}
-        </button>
-      ))}
+      {ITEMS.map((item) => {
+        const active = view === item.view
+        return (
+          <button
+            key={item.view}
+            onClick={() => setView(item.view)}
+            className="flex flex-1 flex-col items-center gap-0.5 rounded-xl border-2 py-1 text-[10px] font-extrabold"
+            style={{
+              color: active ? '#1899d6' : 'var(--text-muted)',
+              borderColor: active ? 'color-mix(in srgb, #1cb0f6 55%, transparent)' : 'transparent',
+              background: active ? 'color-mix(in srgb, #1cb0f6 12%, var(--bg-elevated))' : 'transparent',
+            }}
+          >
+            <Icon name={item.icon} size={26} />
+            {item.label}
+          </button>
+        )
+      })}
     </nav>
   )
 }
