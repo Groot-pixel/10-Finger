@@ -134,13 +134,17 @@ const ICONS: Record<string, ReactNode> = {
   ),
   profile: (
     <>
-      <circle cx="12" cy="12" r="10" fill={C.green} />
-      <ellipse cx="12" cy="15.6" rx="5.6" ry="4" fill="#a5ed6e" />
-      <circle cx="8.6" cy="9.6" r="2.4" fill={C.white} />
-      <circle cx="15.4" cy="9.6" r="2.4" fill={C.white} />
-      <circle cx="9" cy="9.9" r="1.2" fill="#1f2a24" />
-      <circle cx="15.8" cy="9.9" r="1.2" fill="#1f2a24" />
-      <path d="M9.6 14.4c1.4 1.2 3.4 1.2 4.8 0" fill="none" stroke={C.greenDark} strokeWidth="1.3" strokeLinecap="round" />
+      <circle cx="4.6" cy="11" r="3.4" fill="#d48f34" />
+      <circle cx="19.4" cy="11" r="3.4" fill="#d48f34" />
+      <circle cx="4.6" cy="11" r="1.9" fill="#f6e7c8" />
+      <circle cx="19.4" cy="11" r="1.9" fill="#f6e7c8" />
+      <circle cx="12" cy="11.4" r="9.4" fill="#e3a03c" />
+      <path d="M12 4.6c3 0 4.4 1.8 4.6 3.8 3 1.4 2.8 9.6-4.6 9.6S4.4 9.8 7.4 8.4C7.6 6.4 9 4.6 12 4.6z" fill="#fbf2e0" />
+      <circle cx="9.6" cy="8.8" r="1.25" fill="#1a120c" />
+      <circle cx="14.4" cy="8.8" r="1.25" fill="#1a120c" />
+      <circle cx="10" cy="8.4" r=".4" fill="#fff" />
+      <circle cx="14.8" cy="8.4" r=".4" fill="#fff" />
+      <path d="M8.4 14.2q3.6 2.4 7.2 0" stroke="#c8323e" strokeWidth="1.1" fill="none" strokeLinecap="round" />
     </>
   ),
   repeat: (
