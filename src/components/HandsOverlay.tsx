@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { FINGER_COLOR, fingerFor, shiftKeyFor, type FingerId } from '../data/keyboard'
-import { HAND_FILLS, HAND_STROKES, type HandPart, type HandSide } from '../data/handArt'
+import { HAND_FILLS as DRAWN_FILLS, HAND_STROKES as DRAWN_STROKES, type HandPart, type HandSide } from '../data/handArt'
 import type { Point } from '../hooks/useKeyRects'
 
 interface Props {
@@ -22,20 +22,30 @@ const HOME_KEY: Record<HandSide, Record<Exclude<HandPart, 'thumb'>, string>> = {
   R: { pinky: 'ö', ring: 'l', middle: 'k', index: 'j' },
 }
 /** where each finger leaves the palm (B) and where its tip rests (T), in reference pixels */
-const BASE: Record<HandSide, Record<HandPart, Point>> = {
-  L: { pinky: { x: 148, y: 488 }, ring: { x: 197, y: 498 }, middle: { x: 292, y: 487 }, index: { x: 395, y: 538 }, thumb: { x: 470, y: 640 } },
-  R: { pinky: { x: 1015, y: 509 }, ring: { x: 944, y: 501 }, middle: { x: 861, y: 519 }, index: { x: 765, y: 551 }, thumb: { x: 680, y: 620 } },
-}
-const TIP: Record<HandSide, Record<HandPart, Point>> = {
-  L: { pinky: { x: 236, y: 283 }, ring: { x: 319, y: 283 }, middle: { x: 401, y: 283 }, index: { x: 485, y: 283 }, thumb: { x: 520, y: 445 } },
-  R: { pinky: { x: 983, y: 283 }, ring: { x: 900, y: 283 }, middle: { x: 817, y: 283 }, index: { x: 734, y: 283 }, thumb: { x: 640, y: 425 } },
-}
+const BASE_R: Record<HandPart, Point> = { pinky: { x: 1015, y: 509 }, ring: { x: 944, y: 501 }, middle: { x: 861, y: 519 }, index: { x: 765, y: 551 }, thumb: { x: 680, y: 620 } }
+const TIP_R: Record<HandPart, Point> = { pinky: { x: 983, y: 283 }, ring: { x: 900, y: 283 }, middle: { x: 817, y: 283 }, index: { x: 734, y: 283 }, thumb: { x: 640, y: 425 } }
+
+/*
+ * The left hand is the mirror image of the (cleaner) right hand of the drawing. The drawing is almost
+ * symmetric: mirrored about the middle between F and J, every right fingertip lands exactly on its left
+ * home key (J→F, K→D, L→S, Ö→A). The left hand of the drawing hides its pinky behind the ring finger and
+ * lets neighbouring fingers share contour lines, which looked patched together once a finger moved.
+ */
+const MIRROR_X = ANCHOR.L.x + ANCHOR.R.x
+const mirrorPoint = (p: Point): Point => ({ x: MIRROR_X - p.x, y: p.y })
+const mirrorPts = (pts: number[]): number[] => pts.map((v, i) => (i % 2 === 0 ? MIRROR_X - v : v))
+const mirrorRecord = <T,>(rec: Record<string, T>, f: (v: T) => T) => Object.fromEntries(Object.entries(rec).map(([k, v]) => [k, f(v)]))
+
+const HAND_STROKES = { R: DRAWN_STROKES.R, L: mirrorRecord(DRAWN_STROKES.R, (lines) => lines.map(mirrorPts)) } as typeof DRAWN_STROKES
+const HAND_FILLS = { R: DRAWN_FILLS.R, L: mirrorRecord(DRAWN_FILLS.R, mirrorPts) } as typeof DRAWN_FILLS
+const BASE: Record<HandSide, Record<HandPart, Point>> = { R: BASE_R, L: mirrorRecord(BASE_R, mirrorPoint) as Record<HandPart, Point> }
+const TIP: Record<HandSide, Record<HandPart, Point>> = { R: TIP_R, L: mirrorRecord(TIP_R, mirrorPoint) as Record<HandPart, Point> }
 /**
  * How a hand reaches for a key, like a real one: it first turns a little at the wrist towards the key,
  * then slides a bit; the finger does the rest by turning and stretching/curling. The other fingers ride
  * along with the hand and only lean slightly back towards their home keys.
  */
-const WRIST: Record<HandSide, Point> = { L: { x: 250, y: 860 }, R: { x: 880, y: 860 } }
+const WRIST: Record<HandSide, Point> = { L: mirrorPoint({ x: 880, y: 860 }), R: { x: 880, y: 860 } }
 const HAND_TURN_SHARE = 0.4
 const MAX_HAND_TURN = 0.08
 /** share of the finger's own part that the hand still takes over, so nothing looks frozen */
@@ -101,7 +111,7 @@ function bend(pts: Pts, B: Point, T: Point, target: Point): Pts {
 
 /** contour lines a finger shares with its neighbour (stored with the neighbour) */
 const BORROW: Record<HandSide, Partial<Record<HandPart, [HandPart, number]>>> = {
-  L: { ring: ['middle', 1] },
+  L: { middle: ['index', 1], ring: ['middle', 1], pinky: ['ring', 1] },
   R: { middle: ['index', 1], ring: ['middle', 1], pinky: ['ring', 1] },
 }
 
@@ -110,18 +120,15 @@ const BORROW: Record<HandSide, Partial<Record<HandPart, [HandPart, number]>>> = 
  * line (root → top, reference pixels) by `n`. The lower half stays as drawn, so neighbouring fingers
  * keep sharing one contour line there and only part slightly at the fingertips, like in the drawing.
  */
+const SLIM_R: Partial<Record<HandPart, { top: Point; root: Point; n: number }>> = {
+  index: { top: { x: 742, y: 254 }, root: { x: 765, y: 551 }, n: 0.84 },
+  middle: { top: { x: 817, y: 245 }, root: { x: 861, y: 519 }, n: 0.82 },
+  ring: { top: { x: 895, y: 252 }, root: { x: 944, y: 501 }, n: 0.84 },
+  pinky: { top: { x: 970, y: 265 }, root: { x: 1015, y: 509 }, n: 0.9 },
+}
 const SLIM: Record<HandSide, Partial<Record<HandPart, { top: Point; root: Point; n: number }>>> = {
-  L: {
-    ring: { top: { x: 318, y: 258 }, root: { x: 197, y: 498 }, n: 0.86 },
-    middle: { top: { x: 405, y: 258 }, root: { x: 292, y: 487 }, n: 0.84 },
-    index: { top: { x: 487, y: 259 }, root: { x: 395, y: 538 }, n: 0.84 },
-  },
-  R: {
-    index: { top: { x: 742, y: 254 }, root: { x: 765, y: 551 }, n: 0.84 },
-    middle: { top: { x: 817, y: 245 }, root: { x: 861, y: 519 }, n: 0.82 },
-    ring: { top: { x: 895, y: 252 }, root: { x: 944, y: 501 }, n: 0.84 },
-    pinky: { top: { x: 970, y: 265 }, root: { x: 1015, y: 509 }, n: 0.9 },
-  },
+  R: SLIM_R,
+  L: mirrorRecord(SLIM_R as Record<string, { top: Point; root: Point; n: number }>, (v) => ({ top: mirrorPoint(v.top), root: mirrorPoint(v.root), n: v.n })),
 }
 
 function slim(pts: Pts, hand: HandSide, part: HandPart): Pts {
@@ -142,88 +149,6 @@ function slim(pts: Pts, hand: HandSide, part: HandPart): Pts {
     out[i + 1] = pts[i + 1] - k * (py - t * ay)
   }
   return out
-}
-
-/** the same line, resampled to `n` points evenly spaced along its length */
-function resample(pts: Pts, n: number): Pts {
-  const seg: number[] = [0]
-  for (let i = 2; i < pts.length; i += 2) seg.push(seg[seg.length - 1] + Math.hypot(pts[i] - pts[i - 2], pts[i + 1] - pts[i - 1]))
-  const total = seg[seg.length - 1]
-  const out: Pts = []
-  let j = 0
-  for (let k = 0; k < n; k++) {
-    const d = (total * k) / (n - 1)
-    while (j < seg.length - 2 && seg[j + 1] < d) j++
-    const f = seg[j + 1] > seg[j] ? (d - seg[j]) / (seg[j + 1] - seg[j]) : 0
-    out.push(pts[2 * j] + (pts[2 * j + 2] - pts[2 * j]) * f, pts[2 * j + 1] + (pts[2 * j + 3] - pts[2 * j + 1]) * f)
-  }
-  return out
-}
-
-/** a clean, rounded finger outline (one U-shaped line, inner side → tip → outer side) */
-function fingerOutline(root: Point, tip: Point, halfRoot: number, halfTip: number, curve = 0): Pts {
-  const ax = tip.x - root.x
-  const ay = tip.y - root.y
-  const len = Math.hypot(ax, ay)
-  const dx = ax / len
-  const dy = ay / len
-  const nx = -dy
-  const ny = dx
-  const inner: Pts = []
-  const outer: Pts = []
-  for (let i = 0; i <= 14; i++) {
-    const t = -0.16 + (1.16 * i) / 14
-    const h = halfRoot + (halfTip - halfRoot) * Math.max(0, t)
-    // a slight outward bow, like a real (and the drawn) pinky
-    const bow = -curve * Math.sin(Math.PI * Math.max(0, t))
-    inner.push(root.x + ax * t + nx * (h + bow), root.y + ay * t + ny * (h + bow))
-    outer.push(root.x + ax * t - nx * (h - bow), root.y + ay * t - ny * (h - bow))
-  }
-  const cap: Pts = []
-  for (let i = 1; i < 10; i++) {
-    const a = (Math.PI * i) / 10
-    cap.push(tip.x + nx * halfTip * Math.cos(a) + dx * halfTip * Math.sin(a), tip.y + ny * halfTip * Math.cos(a) + dy * halfTip * Math.sin(a))
-  }
-  const back: Pts = []
-  for (let i = outer.length - 2; i >= 0; i -= 2) back.push(outer[i], outer[i + 1])
-  return [...inner, ...cap, ...back]
-}
-
-/**
- * The left pinky: at rest exactly as drawn (half hidden next to the ring finger), but once it leaves
- * its key it turns into a clean, whole finger – the drawn one is too thin to move on its own.
- */
-const reversed = (pts: Pts): Pts => {
-  const out: Pts = []
-  for (let i = pts.length - 2; i >= 0; i -= 2) out.push(pts[i], pts[i + 1])
-  return out
-}
-/**
- * In the drawing, the left pinky, ring and middle finger have no edge of their own – each one shares a
- * contour line with its neighbour (the pinky is even half hidden). At rest they look exactly as drawn;
- * once one of them leaves its key it smoothly turns into a clean, whole finger of its own, because the
- * shared lines (with the dip between two fingers) look like hooks when a finger moves alone.
- */
-const MORPH_N = 64
-const LEFT_MORPH: Partial<Record<HandPart, { drawn: Pts; clean: Pts }>> = {
-  pinky: {
-    drawn: resample([...reversed(HAND_STROKES.L.ring[1]), ...reversed(HAND_STROKES.L.pinky[1]), ...HAND_STROKES.L.pinky[0]], MORPH_N),
-    clean: resample(fingerOutline({ x: 150, y: 482 }, { x: 233, y: 293 }, 22, 19, 7), MORPH_N),
-  },
-  ring: {
-    drawn: resample(slim([...reversed(HAND_STROKES.L.ring[1]), ...HAND_STROKES.L.ring[0], ...HAND_STROKES.L.middle[1]], 'L', 'ring'), MORPH_N),
-    clean: resample(fingerOutline({ x: 226, y: 484 }, { x: 318, y: 290 }, 25, 22, 5), MORPH_N),
-  },
-  middle: {
-    drawn: resample(slim([...reversed(HAND_STROKES.L.middle[1]), ...reversed(HAND_STROKES.L.middle[0]), ...HAND_STROKES.L.middle[2]], 'L', 'middle'), MORPH_N),
-    clean: resample(fingerOutline({ x: 318, y: 480 }, { x: 402, y: 290 }, 26, 23, 4), MORPH_N),
-  },
-}
-function leftFinger(part: HandPart, reach: number): Pts | null {
-  const m = LEFT_MORPH[part]
-  if (!m) return null
-  const k = Math.min(1, reach / 40)
-  return m.drawn.map((v, i) => v + (m.clean[i] - v) * k)
 }
 
 /** the slimmed rest shape of every finger: its own lines plus the line it shares with a neighbour */
@@ -435,13 +360,7 @@ export default function HandsOverlay({ keyRects, nextChar }: Props) {
     fills.push(toPath(HAND_FILLS[hand].palm, map, true))
     for (const line of HAND_STROKES[hand].palm) strokes.push({ d: toPath(line, map), color: null })
     for (const part of [...FINGERS, 'thumb'] as HandPart[]) {
-      let shape = SHAPES[hand][part]
-      const t = hand === 'L' ? reach.L[part] : undefined
-      // the pinky always uses its own outline (it is half hidden in the drawing), ring and middle only while they move
-      if (hand === 'L' && (part === 'pinky' || t)) {
-        const outline = leftFinger(part, t ? Math.hypot(t.x - TIP.L[part].x, t.y - TIP.L[part].y) : 0)
-        if (outline) shape = { strokes: [outline], fill: outline }
-      }
+      const shape = SHAPES[hand][part]
       fills.push(toPath(shaped(part, shape.fill), map, true))
       const color = active.find((f) => f.hand === hand && f.part === part)?.color ?? null
       for (const line of shape.strokes) strokes.push({ d: toPath(shaped(part, line), map), color })
