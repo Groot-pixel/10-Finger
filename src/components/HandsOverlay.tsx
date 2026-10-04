@@ -46,9 +46,17 @@ const MIN_SCALE = 0.9
 /** the (clean) pinky may curl much further on its own, e.g. down to shift */
 const MIN_SCALE_PINKY = 0.6
 const MAX_TURN_PINKY = 0.22
+/** the left fingers (clean outlines while moving) may turn and curl a bit more, so the hand slides less */
+const LEFT_LIMITS: Partial<Record<HandPart, { minScale: number; maxTurn: number }>> = {
+  index: { minScale: 0.82, maxTurn: 0.3 },
+  middle: { minScale: 0.78, maxTurn: 0.2 },
+  ring: { minScale: 0.78, maxTurn: 0.18 },
+}
 const MAX_SCALE = 1.3
 /** how much the other fingers lean back towards their home keys */
 const PIN = 0.5
+/** the left fingers stay closer to their home keys (they are drawn wider and would drift onto the next key) */
+const PIN_LEFT = 0.75
 
 const rotateAbout = (p: Point, c: Point, a: number): Point => {
   const cs = Math.cos(a)
@@ -190,12 +198,32 @@ const reversed = (pts: Pts): Pts => {
   for (let i = pts.length - 2; i >= 0; i -= 2) out.push(pts[i], pts[i + 1])
   return out
 }
-const PINKY_N = 64
-const PINKY_DRAWN = resample([...reversed(HAND_STROKES.L.ring[1]), ...reversed(HAND_STROKES.L.pinky[1]), ...HAND_STROKES.L.pinky[0]], PINKY_N)
-const PINKY_CLEAN = resample(fingerOutline({ x: 150, y: 482 }, { x: 233, y: 293 }, 22, 19, 7), PINKY_N)
-function leftPinky(reach: number): Pts {
-  const m = Math.min(1, reach / 45)
-  return PINKY_DRAWN.map((v, i) => v + (PINKY_CLEAN[i] - v) * m)
+/**
+ * In the drawing, the left pinky, ring and middle finger have no edge of their own – each one shares a
+ * contour line with its neighbour (the pinky is even half hidden). At rest they look exactly as drawn;
+ * once one of them leaves its key it smoothly turns into a clean, whole finger of its own, because the
+ * shared lines (with the dip between two fingers) look like hooks when a finger moves alone.
+ */
+const MORPH_N = 64
+const LEFT_MORPH: Partial<Record<HandPart, { drawn: Pts; clean: Pts }>> = {
+  pinky: {
+    drawn: resample([...reversed(HAND_STROKES.L.ring[1]), ...reversed(HAND_STROKES.L.pinky[1]), ...HAND_STROKES.L.pinky[0]], MORPH_N),
+    clean: resample(fingerOutline({ x: 150, y: 482 }, { x: 233, y: 293 }, 22, 19, 7), MORPH_N),
+  },
+  ring: {
+    drawn: resample(slim([...reversed(HAND_STROKES.L.ring[1]), ...HAND_STROKES.L.ring[0], ...HAND_STROKES.L.middle[1]], 'L', 'ring'), MORPH_N),
+    clean: resample(fingerOutline({ x: 226, y: 484 }, { x: 318, y: 290 }, 25, 22, 5), MORPH_N),
+  },
+  middle: {
+    drawn: resample(slim([...reversed(HAND_STROKES.L.middle[1]), ...reversed(HAND_STROKES.L.middle[0]), ...HAND_STROKES.L.middle[2]], 'L', 'middle'), MORPH_N),
+    clean: resample(fingerOutline({ x: 318, y: 480 }, { x: 402, y: 290 }, 26, 23, 4), MORPH_N),
+  },
+}
+function leftFinger(part: HandPart, reach: number): Pts | null {
+  const m = LEFT_MORPH[part]
+  if (!m) return null
+  const k = Math.min(1, reach / 40)
+  return m.drawn.map((v, i) => v + (m.clean[i] - v) * k)
 }
 
 /** the slimmed rest shape of every finger: its own lines plus the line it shares with a neighbour */
@@ -343,7 +371,14 @@ export default function HandsOverlay({ keyRects, nextChar }: Props) {
       const d = Math.hypot(t.x - TIP[hand][f].x, t.y - TIP[hand][f].y)
       if (d <= longest) continue
       longest = d
-      lead = { T: TIP[hand][f], B: BASE[hand][f], t, minScale: f === 'pinky' ? MIN_SCALE_PINKY : MIN_SCALE, maxTurn: f === 'pinky' ? MAX_TURN_PINKY : MAX_TURN }
+      const left = hand === 'L' ? LEFT_LIMITS[f] : undefined
+      lead = {
+        T: TIP[hand][f],
+        B: BASE[hand][f],
+        t,
+        minScale: left?.minScale ?? (f === 'pinky' ? MIN_SCALE_PINKY : MIN_SCALE),
+        maxTurn: left?.maxTurn ?? (f === 'pinky' ? MAX_TURN_PINKY : MAX_TURN),
+      }
     }
     const W = WRIST[hand]
     let angle = 0
@@ -391,7 +426,7 @@ export default function HandsOverlay({ keyRects, nextChar }: Props) {
       else {
         // ride along with the hand, leaning a little back towards the home key
         const moved = toWorld(T)
-        const pin = part === 'thumb' ? 0.15 : PIN
+        const pin = part === 'thumb' ? 0.15 : hand === 'L' ? PIN_LEFT : PIN
         goal = toLocal({ x: moved.x + (T.x - moved.x) * pin, y: moved.y + (T.y - moved.y) * pin })
       }
       return bend(pts, BASE[hand][part], T, goal)
@@ -401,10 +436,11 @@ export default function HandsOverlay({ keyRects, nextChar }: Props) {
     for (const line of HAND_STROKES[hand].palm) strokes.push({ d: toPath(line, map), color: null })
     for (const part of [...FINGERS, 'thumb'] as HandPart[]) {
       let shape = SHAPES[hand][part]
-      if (hand === 'L' && part === 'pinky') {
-        const t = reach.L.pinky
-        const outline = leftPinky(t ? Math.hypot(t.x - TIP.L.pinky.x, t.y - TIP.L.pinky.y) : 0)
-        shape = { strokes: [outline], fill: outline }
+      const t = hand === 'L' ? reach.L[part] : undefined
+      // the pinky always uses its own outline (it is half hidden in the drawing), ring and middle only while they move
+      if (hand === 'L' && (part === 'pinky' || t)) {
+        const outline = leftFinger(part, t ? Math.hypot(t.x - TIP.L[part].x, t.y - TIP.L[part].y) : 0)
+        if (outline) shape = { strokes: [outline], fill: outline }
       }
       fills.push(toPath(shaped(part, shape.fill), map, true))
       const color = active.find((f) => f.hand === hand && f.part === part)?.color ?? null
