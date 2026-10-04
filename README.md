@@ -34,7 +34,7 @@ HTML-Datei herunter und öffne sie in deinem Browser:
 - **Practice Hub**: freies Training außerhalb des Lernpfads – schwache Tasten gezielt üben,
   Geschwindigkeitstests, Fehler-Heatmap.
 - **Einstufungstest**: für Quereinsteiger, springt direkt zum passenden Lernpfad-Level.
-- **Eigenes Maskottchen „Flowy"** (Gecko) mit Stimmungen, ausrüstbarer Kosmetik und
+- **Eigenes Maskottchen „Flowy"** (Kuschelaffe) mit Stimmungen, ausrüstbarer Kosmetik und
   Sound-Feedback (Web Audio, keine externen Dateien).
 - Vollständig **client-seitig**, Fortschritt wird in `localStorage` gespeichert. Dark Mode
   inklusive.
