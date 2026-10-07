@@ -51,3 +51,13 @@ npm run lint      # oxlint
 ## Tech-Stack
 
 React 19 + TypeScript, Vite, Tailwind CSS v4, Zustand (mit `persist`-Middleware).
+
+## Weitere Projekte in diesem Repository
+
+Dieses Repository enthält zusätzlich **CraftGuide**, eine unabhängige App für
+Minecraft-Bauanleitungen (3D-Anleitung, Bild-Anleitung, Voxel-Editor) im Ordner
+[`minecraft-builds/`](minecraft-builds/README.md). Für den schnellen Einstieg ohne
+Setup gibt es davon ebenfalls eine einzelne Offline-HTML-Datei:
+**[`download/CraftGuideSolo.html`](download/CraftGuideSolo.html)** (Download & Öffnen wie oben
+bei ZehnFinger beschrieben). Die Setup-Anleitung für die volle Mehrbenutzer-Version mit
+Server steht in `minecraft-builds/README.md`.

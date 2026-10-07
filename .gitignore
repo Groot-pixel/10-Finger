@@ -22,4 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Minecraft-Builds App (Backend-Datenbank & Uploads, Umgebungsvariablen)
+minecraft-builds/server/data/
+minecraft-builds/server/.env
+
 __pycache__/
