@@ -22,24 +22,26 @@ export class DiscordRpcClient {
 
   async connect(): Promise<void> {
     if (!this.clientId) return
-    const socketPath = findDiscordSocketPath()
-    if (!socketPath) return
+    for (const candidate of findDiscordSocketCandidates()) {
+      if (await this.tryConnect(candidate)) return
+    }
+  }
 
-    await new Promise<void>((resolve) => {
+  private tryConnect(socketPath: string): Promise<boolean> {
+    return new Promise<boolean>((resolve) => {
       const socket = createConnection(socketPath)
       socket.once('connect', () => {
         this.socket = socket
         this.sendHandshake()
         this.connected = true
-        resolve()
+        resolve(true)
       })
       socket.once('error', () => {
-        this.connected = false
-        resolve()
+        resolve(false)
       })
-      socket.setTimeout(3000, () => {
+      socket.setTimeout(1500, () => {
         socket.destroy()
-        resolve()
+        resolve(false)
       })
     })
   }
@@ -76,20 +78,18 @@ export class DiscordRpcClient {
   }
 }
 
-function findDiscordSocketPath(): string | null {
+/**
+ * Lists every socket Discord might be listening on. On Windows a named pipe can't be probed
+ * with existsSync, so every index is a candidate and connect() below tries them in order; on
+ * Linux/macOS we can filter to sockets that actually exist first.
+ */
+function findDiscordSocketCandidates(): string[] {
   if (process.platform === 'win32') {
-    for (let i = 0; i < 10; i++) {
-      const candidate = `\\\\.\\pipe\\discord-ipc-${i}`
-      // Named pipes can't be probed with existsSync; the connect attempt itself is the probe.
-      return candidate
-    }
-    return null
+    return Array.from({ length: 10 }, (_, i) => `\\\\.\\pipe\\discord-ipc-${i}`)
   }
   const base =
     process.env.XDG_RUNTIME_DIR ?? process.env.TMPDIR ?? process.env.TMP ?? process.env.TEMP ?? '/tmp'
-  for (let i = 0; i < 10; i++) {
-    const candidate = `${base}/discord-ipc-${i}`
-    if (existsSync(candidate)) return candidate
-  }
-  return null
+  return Array.from({ length: 10 }, (_, i) => `${base}/discord-ipc-${i}`).filter((candidate) =>
+    existsSync(candidate)
+  )
 }

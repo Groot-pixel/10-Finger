@@ -9,6 +9,7 @@ import { fetchJson } from '../network/httpClient'
 import { profileStore } from '../storage/profileStore'
 import { lockfileStore } from '../storage/lockfileStore'
 import { paths } from '../storage/paths'
+import { resolveWithinBase } from '../storage/safePath'
 import { getCurseForgeApiKey } from './modsService'
 
 interface MrpackIndex {
@@ -38,7 +39,7 @@ async function extractOverrides(zip: AdmZip, gameDir: string): Promise<void> {
     const overridesMatch = entry.entryName.match(/^(?:client-)?overrides\/(.+)$/)
     if (!overridesMatch) continue
     const relativePath = overridesMatch[1] as string
-    const destPath = join(gameDir, relativePath)
+    const destPath = resolveWithinBase(gameDir, relativePath)
     await fs.mkdir(join(destPath, '..'), { recursive: true })
     await fs.writeFile(destPath, entry.getData())
   }
@@ -85,7 +86,7 @@ export async function importMrpackFile(zipPath: string): Promise<Profile> {
   const installedMods: InstalledMod[] = []
   for (const file of index.files) {
     if (file.env?.client === 'unsupported') continue
-    const destPath = join(gameDir, file.path)
+    const destPath = resolveWithinBase(gameDir, file.path)
     const url = file.downloads[0]
     if (!url) continue
     await downloadFile({ url, destPath, expectedSha1: file.hashes.sha1, expectedSize: file.fileSize })

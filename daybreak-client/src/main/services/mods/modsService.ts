@@ -16,6 +16,14 @@ import { secretVault } from '../storage/secretVault'
 import { searchModrinth, listModrinthVersions } from './modrinthClient'
 import { searchCurseForge, listCurseForgeVersions } from './curseforgeClient'
 import { resolveInstallOrder, findIncompatibilities, nodeKey, type DependencyNode } from './dependencyResolver'
+import { fetchVersionManifest, resolveVersionId } from '../minecraft/versionManifest'
+
+/** Resolves the profile's "latest-release"/"latest-snapshot" placeholder to a concrete Minecraft version for mod API queries. */
+async function resolveMinecraftVersion(requested: string): Promise<string> {
+  if (requested !== 'latest-release' && requested !== 'latest-snapshot') return requested
+  const manifest = await fetchVersionManifest()
+  return resolveVersionId(manifest, requested).id
+}
 
 const CURSEFORGE_KEY_SECRET = 'curseforge:apiKey'
 
@@ -75,10 +83,7 @@ export async function listVersions(
 ): Promise<ModVersionOption[]> {
   const profile = requireJavaProfile(await getProfileOrThrow(profileId))
   if (profile.edition !== 'java') throw new Error('unreachable')
-  const minecraftVersion =
-    profile.minecraftVersion === 'latest-release' || profile.minecraftVersion === 'latest-snapshot'
-      ? profile.minecraftVersion
-      : profile.minecraftVersion
+  const minecraftVersion = await resolveMinecraftVersion(profile.minecraftVersion)
   if (platform === 'modrinth') {
     return listModrinthVersions(projectId, minecraftVersion, profile.loader, appVersion)
   }

@@ -42,9 +42,12 @@ export function createMainWindow(): BrowserWindow {
   })
 
   // Any link clicked inside the app opens in the user's real browser, never a second
-  // Electron window with full Node/Electron access.
+  // Electron window with full Node/Electron access - and only for http(s), matching the
+  // same scheme restriction the app:openExternal IPC handler enforces.
   window.webContents.setWindowOpenHandler((details) => {
-    void shell.openExternal(details.url)
+    if (/^https?:\/\//.test(details.url)) {
+      void shell.openExternal(details.url)
+    }
     return { action: 'deny' }
   })
 

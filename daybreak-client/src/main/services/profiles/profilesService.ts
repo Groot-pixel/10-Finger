@@ -8,6 +8,7 @@ import type { ProfileInput } from '@shared/schemas'
 import { DEFAULT_PROFILE_ID } from '@shared/constants'
 import { profileStore } from '../storage/profileStore'
 import { paths } from '../storage/paths'
+import { resolveWithinBase } from '../storage/safePath'
 
 const MANIFEST_NAME = 'daybreak-profile.json'
 
@@ -115,7 +116,7 @@ export async function importProfileZip(zipPath: string): Promise<Profile> {
       if (entry.isDirectory || !entry.entryName.startsWith('gamedir/')) continue
       const relative = entry.entryName.slice('gamedir/'.length)
       if (!relative) continue
-      const destPath = join(gameDir, relative)
+      const destPath = resolveWithinBase(gameDir, relative)
       await fs.mkdir(join(destPath, '..'), { recursive: true })
       await fs.writeFile(destPath, entry.getData())
     }
@@ -155,7 +156,7 @@ export async function listWorlds(profileId: string): Promise<string[]> {
 export async function backupWorld(profileId: string, worldName: string): Promise<string> {
   const profile = await profileStore.get(profileId)
   if (!profile) throw new Error(`Profil ${profileId} wurde nicht gefunden`)
-  const worldDir = join(savesDirFor(profile), worldName)
+  const worldDir = resolveWithinBase(savesDirFor(profile), worldName)
   await fs.access(worldDir)
   const backupDir = join(app.getPath('userData'), 'backups')
   await fs.mkdir(backupDir, { recursive: true })

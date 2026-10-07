@@ -1,4 +1,4 @@
-import { exec } from 'node:child_process'
+import { execFile } from 'node:child_process'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
@@ -8,7 +8,7 @@ import { downloadFile } from '../network/downloader'
 import { paths } from '../storage/paths'
 import AdmZip from 'adm-zip'
 
-const execAsync = promisify(exec)
+const execFileAsync = promisify(execFile)
 
 export interface DetectedJava {
   path: string
@@ -28,7 +28,9 @@ function parseJavaVersion(versionOutput: string): { version: string; majorVersio
 
 async function probeJavaBinary(javaPath: string): Promise<DetectedJava | null> {
   try {
-    const { stderr, stdout } = await execAsync(`"${javaPath}" -version`, { timeout: 5000 })
+    // execFile (never exec/shell) so a malicious or malformed java path - from settings or a
+    // profile - can never be interpreted as shell syntax, only ever as a single argv[0].
+    const { stderr, stdout } = await execFileAsync(javaPath, ['-version'], { timeout: 5000 })
     const parsed = parseJavaVersion(`${stderr}${stdout}`)
     if (!parsed) return null
     return { path: javaPath, ...parsed }
