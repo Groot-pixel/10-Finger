@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import TypingArea from '../components/TypingArea'
 import Mascot from '../components/Mascot'
+import Icon from '../components/Icon'
 import Confetti from '../components/Confetti'
 import { useStore } from '../store/useStore'
 import { generateLessonText } from '../engine/textGenerator'
@@ -83,32 +84,32 @@ export default function LessonPage() {
         </h2>
 
         <div className="grid w-full max-w-md grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="WPM" value={result.wpm} icon="⚡" />
-          <Stat label="Genauigkeit" value={`${result.accuracy}%`} icon="🎯" />
-          <Stat label="Zeichen" value={result.charsTyped} icon="⌨️" />
-          <Stat label="Max. Combo" value={result.maxCombo} icon="🔥" />
+          <Stat label="WPM" value={result.wpm} icon="bolt" color="#ffc800" />
+          <Stat label="Genauigkeit" value={`${result.accuracy}%`} icon="target" color="#58cc02" />
+          <Stat label="Zeichen" value={result.charsTyped} icon="keyboard" color="#1cb0f6" />
+          <Stat label="Combo" value={result.maxCombo} icon="flame" color="#ff9600" />
         </div>
 
         {session.kind !== 'placement' && (
           <div className="flex flex-wrap items-center justify-center gap-4 text-lg font-bold">
-            {reward.xpEarned > 0 && <span style={{ color: 'var(--primary)' }}>+{reward.xpEarned} EP</span>}
-            {reward.gemsEarned > 0 && <span className="text-sky-500">+{reward.gemsEarned} 💎</span>}
-            {reward.crownUp && <span className="text-amber-500">👑 Level up!</span>}
+            {reward.xpEarned > 0 && <span className="flex items-center gap-1" style={{ color: '#ce82ff' }}><Icon name="star" size={24} />+{reward.xpEarned} EP</span>}
+            {reward.gemsEarned > 0 && <span className="flex items-center gap-1" style={{ color: '#1cb0f6' }}><Icon name="gem" size={24} />+{reward.gemsEarned}</span>}
+            {reward.crownUp && <span className="flex items-center gap-1" style={{ color: '#e5a400' }}><Icon name="crown" size={24} />Krone verdient!</span>}
           </div>
         )}
         {session.kind === 'placement' && (
           <div className="flex gap-4 text-lg font-bold">
-            <span className="text-sky-500">+25 💎 Willkommensbonus</span>
+            <span className="flex items-center gap-1" style={{ color: '#1cb0f6' }}><Icon name="gem" size={24} />+25 Willkommensbonus</span>
           </div>
         )}
 
         {session.kind !== 'placement' && (
           <div className="flex items-center gap-1 rounded-full px-3 py-1.5" style={{ background: 'var(--kb-key-bg)' }}>
             {Array.from({ length: 5 }).map((_, i) => (
-              <span key={i} style={{ opacity: i < reward.precisionHearts ? 1 : 0.25 }}>❤️</span>
+              <Icon key={i} name="heart" size={20} muted={i >= reward.precisionHearts} />
             ))}
             <span className="ml-2 text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>
-              {reward.precisionHearts === 5 ? 'Makellose Präzision!' : `Präzisions-Bonus: +${reward.precisionHearts} 💎`}
+              {reward.precisionHearts === 5 ? 'Makellose Präzision!' : `Präzisions-Bonus: +${reward.precisionHearts} Gems`}
             </span>
           </div>
         )}
@@ -120,22 +121,22 @@ export default function LessonPage() {
         <div className="flex flex-wrap justify-center gap-3">
           <button
             onClick={() => { cancelSession(); setView('path') }}
-            className="btn-press rounded-2xl px-6 py-3 font-bold text-white shadow"
-            style={{ background: 'var(--primary)' }}
+            className="btn-3d min-w-40 px-6 py-3 text-white"
+            style={{ background: '#58cc02', ['--btn-edge' as string]: '#46a302' }}
           >
             {session.kind === 'placement' ? 'Zum Lernpfad' : 'Weiter'}
           </button>
           {session.kind === 'path' && (
             <button
               onClick={() => { setResult(null); setReward(null) }}
-              className="btn-press rounded-2xl border px-6 py-3 font-bold"
-              style={{ borderColor: 'var(--border)' }}
+              className="btn-3d min-w-40 border-2 px-6 py-3"
+              style={{ borderColor: 'var(--border)', color: '#1cb0f6', ['--btn-edge' as string]: 'var(--border)' }}
             >
               Nochmal üben
             </button>
           )}
         </div>
-        {unit && <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{unit.icon} {unit.title}</p>}
+        {unit && <p className="flex items-center gap-1.5 text-sm font-bold" style={{ color: 'var(--text-muted)' }}><Icon name={unit.icon} size={18} /> {unit.title}</p>}
       </div>
     )
   }
@@ -160,12 +161,15 @@ export default function LessonPage() {
   )
 }
 
-function Stat({ label, value, icon }: { label: string; value: string | number; icon: string }) {
+/** result card in the style of Duolingo: coloured frame with the label on top */
+function Stat({ label, value, icon, color }: { label: string; value: string | number; icon: string; color: string }) {
   return (
-    <div className="pop-in flex flex-col items-center gap-1 rounded-2xl border p-3" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)', boxShadow: 'var(--card-shadow)' }}>
-      <span className="text-2xl">{icon}</span>
-      <span className="text-xl font-extrabold">{value}</span>
-      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{label}</span>
+    <div className="pop-in overflow-hidden rounded-2xl border-2" style={{ borderColor: color, background: color }}>
+      <div className="py-1 text-[11px] font-extrabold uppercase tracking-wide text-white">{label}</div>
+      <div className="flex items-center justify-center gap-1.5 whitespace-nowrap rounded-t-xl px-2 py-3 text-lg font-black" style={{ background: 'var(--bg-elevated)', color }}>
+        <Icon name={icon} size={22} />
+        {value}
+      </div>
     </div>
   )
 }

@@ -23,7 +23,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     id: 'wildfire',
     title: 'Wildfeuer',
     description: (t) => `Erreiche eine Serie von ${t} Tagen`,
-    icon: '🔥',
+    icon: 'flame',
     metric: 'longestStreak',
     tiers: [
       { level: 1, threshold: 3, gemReward: 10 },
@@ -36,7 +36,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     id: 'sharpshooter',
     title: 'Scharfschütze',
     description: (t) => `Beende ${t} Lektionen mit 100% Genauigkeit`,
-    icon: '🎯',
+    icon: 'target',
     metric: 'perfectLessons',
     tiers: [
       { level: 1, threshold: 1, gemReward: 10 },
@@ -49,7 +49,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     id: 'speed-demon',
     title: 'Tempo-Dämon',
     description: (t) => `Erreiche ${t} WPM in einer Lektion`,
-    icon: '⚡',
+    icon: 'bolt',
     metric: 'bestWpm',
     tiers: [
       { level: 1, threshold: 20, gemReward: 10 },
@@ -62,7 +62,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     id: 'marathoner',
     title: 'Marathonläufer',
     description: (t) => `Tippe insgesamt ${t.toLocaleString('de-DE')} Zeichen`,
-    icon: '🏃',
+    icon: 'stopwatch',
     metric: 'totalCharsTyped',
     tiers: [
       { level: 1, threshold: 1000, gemReward: 10 },
@@ -75,7 +75,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     id: 'scholar',
     title: 'Gelehrter',
     description: (t) => `Schließe ${t} Lektionen ab`,
-    icon: '📚',
+    icon: 'book',
     metric: 'lessonsCompleted',
     tiers: [
       { level: 1, threshold: 5, gemReward: 10 },
@@ -88,7 +88,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     id: 'conqueror',
     title: 'Eroberer',
     description: (t) => `Schließe ${t} Unit${t > 1 ? 's' : ''} ab`,
-    icon: '🏆',
+    icon: 'trophy',
     metric: 'unitsCompleted',
     tiers: [
       { level: 1, threshold: 1, gemReward: 15 },
@@ -101,7 +101,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     id: 'early-bird',
     title: 'Frühaufsteher',
     description: (t) => `Übe ${t}-mal vor 8 Uhr morgens`,
-    icon: '🌅',
+    icon: 'sunrise',
     metric: 'earlyBirdCount',
     tiers: [
       { level: 1, threshold: 1, gemReward: 10 },
@@ -113,7 +113,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     id: 'night-owl',
     title: 'Nachteule',
     description: (t) => `Übe ${t}-mal nach 22 Uhr abends`,
-    icon: '🌙',
+    icon: 'moon',
     metric: 'nightOwlCount',
     tiers: [
       { level: 1, threshold: 1, gemReward: 10 },
@@ -125,7 +125,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     id: 'combo-king',
     title: 'Combo-König',
     description: (t) => `Erreiche eine Fehlerfrei-Combo von ${t} Zeichen`,
-    icon: '💫',
+    icon: 'sparkle',
     metric: 'bestCombo',
     tiers: [
       { level: 1, threshold: 25, gemReward: 10 },
@@ -137,7 +137,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     id: 'checkpoint-champion',
     title: 'Checkpoint-Champion',
     description: (t) => `Bestehe ${t} Checkpoints`,
-    icon: '🚩',
+    icon: 'flag',
     metric: 'checkpointsCleared',
     tiers: [
       { level: 1, threshold: 1, gemReward: 15 },

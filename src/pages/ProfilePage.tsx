@@ -1,10 +1,17 @@
 import { useState } from 'react'
-import { useStore } from '../store/useStore'
+import { useStore, levelFromXP, todayISO, type SessionLogEntry } from '../store/useStore'
 import { CURRICULUM } from '../data/curriculum'
+import { ABC_TEXT } from '../data/keyboard'
 import Mascot from '../components/Mascot'
+import Icon from '../components/Icon'
+import KeyHeatmap from '../components/KeyHeatmap'
+import { BannerPattern, LeagueBadge } from '../components/Art'
+import { Bar } from '../components/RightRail'
+import { LEAGUES } from '../data/league'
 
 export default function ProfilePage() {
   const name = useStore((s) => s.name)
+  const createdAt = useStore((s) => s.createdAt)
   const totalXP = useStore((s) => s.totalXP)
   const bestWpm = useStore((s) => s.bestWpm)
   const longestStreak = useStore((s) => s.longestStreak)
@@ -13,70 +20,118 @@ export default function ProfilePage() {
   const totalCharsTyped = useStore((s) => s.totalCharsTyped)
   const perfectLessons = useStore((s) => s.perfectLessons)
   const lessonProgress = useStore((s) => s.lessonProgress)
+  const keyStats = useStore((s) => s.keyStats)
+  const sessionLog = useStore((s) => s.sessionLog) ?? []
   const equippedCosmetics = useStore((s) => s.equippedCosmetics)
+  const leagueDivisionIndex = useStore((s) => s.leagueDivisionIndex)
   const soundEnabled = useStore((s) => s.soundEnabled)
   const toggleSound = useStore((s) => s.toggleSound)
   const darkMode = useStore((s) => s.darkMode)
   const toggleDarkMode = useStore((s) => s.toggleDarkMode)
   const resetProgress = useStore((s) => s.resetProgress)
   const setView = useStore((s) => s.setView)
+  const startPractice = useStore((s) => s.startPractice)
 
   const [confirmReset, setConfirmReset] = useState(false)
+  const { level, xpIntoLevel, xpForNextLevel } = levelFromXP(totalXP)
+  const since = new Date(createdAt).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <div className="mb-6 flex flex-col items-center gap-3 rounded-2xl border p-6 text-center" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)', boxShadow: 'var(--card-shadow)' }}>
-        <Mascot mood="happy" size={100} accessories={equippedCosmetics} />
-        <h1 className="text-xl font-extrabold">{name}</h1>
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>🔥 {currentStreak} Tage Serie · Rekord {longestStreak}</p>
+      {/* header */}
+      <div className="relative mb-6 overflow-hidden rounded-3xl text-white" style={{ background: 'linear-gradient(135deg, #58cc02, #46a302)', boxShadow: '0 5px 0 #3a8a02' }}>
+        <BannerPattern />
+        <div className="relative flex flex-col items-center gap-4 px-6 py-6 sm:flex-row">
+          <div className="rounded-full bg-white/20 p-2">
+            <Mascot mood="happy" size={104} accessories={equippedCosmetics} />
+          </div>
+          <div className="flex-1 text-center sm:text-left">
+            <h1 className="text-3xl font-black">{name}</h1>
+            <div className="text-sm font-semibold opacity-90">Dabei seit {since}</div>
+            <div className="mt-3 flex flex-wrap justify-center gap-2 text-xs font-extrabold sm:justify-start">
+              <span className="flex items-center gap-1 rounded-full bg-white/25 px-2.5 py-1"><Icon name="star" size={14} /> Level {level}</span>
+              <span className="flex items-center gap-1 rounded-full bg-white/25 px-2.5 py-1"><Icon name="flame" size={14} /> {currentStreak} Tage</span>
+              <span className="flex items-center gap-1 rounded-full bg-white/25 px-2.5 py-1">{LEAGUES[leagueDivisionIndex].name}</span>
+            </div>
+            <div className="mt-3 max-w-xs">
+              <div className="mb-1 text-[11px] font-bold opacity-90">{xpIntoLevel} / {xpForNextLevel} EP bis Level {level + 1}</div>
+              <div className="h-2.5 overflow-hidden rounded-full bg-black/15">
+                <div className="h-full rounded-full bg-white" style={{ width: `${(xpIntoLevel / xpForNextLevel) * 100}%` }} />
+              </div>
+            </div>
+          </div>
+          <LeagueBadge index={leagueDivisionIndex} size={64} />
+        </div>
       </div>
 
+      <h2 className="mb-3 text-lg font-extrabold">Statistiken</h2>
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <Stat icon="⭐" label="Gesamt-EP" value={totalXP} />
-        <Stat icon="⚡" label="Beste WPM" value={bestWpm} />
-        <Stat icon="📘" label="Lektionen" value={lessonsCompleted} />
-        <Stat icon="⌨️" label="Zeichen getippt" value={totalCharsTyped.toLocaleString('de-DE')} />
-        <Stat icon="💯" label="Perfekte Lektionen" value={perfectLessons} />
-        <Stat icon="🔥" label="Bestwert Serie" value={longestStreak} />
+        <Stat icon="flame" label="Tage Serie" value={currentStreak} sub={`Rekord ${longestStreak}`} />
+        <Stat icon="star" label="Gesamt-EP" value={totalXP.toLocaleString('de-DE')} />
+        <Stat icon="bolt" label="Beste WPM" value={bestWpm} />
+        <Stat icon="book" label="Lektionen" value={lessonsCompleted} />
+        <Stat icon="keyboard" label="Zeichen getippt" value={totalCharsTyped.toLocaleString('de-DE')} />
+        <Stat icon="target" label="Perfekte Lektionen" value={perfectLessons} />
       </div>
 
-      <h2 className="mb-3 text-lg font-extrabold">Fortschritt pro Unit</h2>
-      <div className="mb-8 flex flex-col gap-2">
+      <button onClick={() => startPractice(ABC_TEXT)} className="tile tile-hover mb-8 flex w-full items-center gap-4 p-4 text-left">
+        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl" style={{ background: '#6366f11f' }}>
+          <Icon name="abc" size={40} />
+        </span>
+        <span className="flex-1">
+          <span className="block font-extrabold">ABC-Durchlauf</span>
+          <span className="block text-sm" style={{ color: 'var(--text-muted)' }}>Einmal das ganze Alphabet tippen – a bis ß, dann alle Großbuchstaben. Die Hände zeigen dir jeden Finger.</span>
+        </span>
+        <Icon name="chevron" size={20} className="opacity-40" />
+      </button>
+
+      <h2 className="mb-3 flex items-center gap-2 text-lg font-extrabold"><Icon name="calendar" size={24} /> Aktivität</h2>
+      <ActivityCalendar log={sessionLog} />
+
+      <h2 className="mb-3 mt-8 flex items-center gap-2 text-lg font-extrabold"><Icon name="chart" size={24} /> Dein Tempo</h2>
+      <WpmChart log={sessionLog} />
+
+      <h2 className="mb-3 mt-8 flex items-center gap-2 text-lg font-extrabold"><Icon name="keyboard" size={24} /> Tasten-Heatmap</h2>
+      <KeyHeatmap keyStats={keyStats} />
+
+      <h2 className="mb-3 mt-8 text-lg font-extrabold">Fortschritt pro Einheit</h2>
+      <div className="tile mb-8 flex flex-col gap-3 p-4">
         {CURRICULUM.map((unit) => {
           const done = unit.lessons.filter((l) => (lessonProgress[l.id]?.crownLevel ?? 0) > 0).length
           const pct = Math.round((done / unit.lessons.length) * 100)
           return (
             <div key={unit.id} className="flex items-center gap-3">
-              <span className="w-40 shrink-0 text-xs font-bold leading-tight sm:w-44 sm:text-sm">{unit.icon} {unit.title}</span>
-              <div className="h-2.5 flex-1 overflow-hidden rounded-full" style={{ background: 'var(--kb-key-bg)' }}>
-                <div className="h-full rounded-full" style={{ width: `${pct}%`, background: unit.color }} />
+              <Icon name={unit.icon} size={28} muted={done === 0} />
+              <span className="w-32 shrink-0 text-sm font-bold leading-tight sm:w-40">{unit.title}</span>
+              <div className="flex-1">
+                <Bar pct={pct} color={unit.color} />
               </div>
-              <span className="w-10 text-right text-xs font-bold" style={{ color: 'var(--text-muted)' }}>{done}/{unit.lessons.length}</span>
+              <span className="w-9 text-right text-xs font-extrabold" style={{ color: 'var(--text-muted)' }}>{done}/{unit.lessons.length}</span>
             </div>
           )
         })}
       </div>
 
       <h2 className="mb-3 text-lg font-extrabold">Einstellungen</h2>
-      <div className="flex flex-col gap-2">
-        <SettingRow label="🔊 Soundeffekte" active={soundEnabled} onClick={toggleSound} />
-        <SettingRow label="🌙 Dark Mode" active={darkMode} onClick={toggleDarkMode} />
-        <button
-          onClick={() => setView('placement')}
-          className="rounded-xl border px-4 py-3 text-left font-bold"
-          style={{ borderColor: 'var(--border)' }}
-        >
-          🚀 Einstufungstest erneut machen
+      <div className="tile flex flex-col divide-y-2" style={{ borderColor: 'var(--border)' }}>
+        <SettingRow icon="sound" label="Soundeffekte" active={soundEnabled} onClick={toggleSound} />
+        <SettingRow icon="moon" label="Dark Mode" active={darkMode} onClick={toggleDarkMode} />
+        <button onClick={() => setView('placement')} className="flex items-center gap-3 px-4 py-3 text-left font-bold" style={{ borderColor: 'var(--border)' }}>
+          <Icon name="rocket" size={26} />
+          <span className="flex-1">Einstufungstest erneut machen</span>
+          <Icon name="chevron" size={18} className="opacity-40" />
         </button>
         {!confirmReset ? (
-          <button onClick={() => setConfirmReset(true)} className="rounded-xl border px-4 py-3 text-left font-bold text-rose-500" style={{ borderColor: 'var(--border)' }}>
-            ⚠️ Fortschritt zurücksetzen
+          <button onClick={() => setConfirmReset(true)} className="flex items-center gap-3 px-4 py-3 text-left font-bold" style={{ borderColor: 'var(--border)', color: '#ff4b4b' }}>
+            <Icon name="warning" size={26} />
+            <span className="flex-1">Fortschritt zurücksetzen</span>
           </button>
         ) : (
-          <div className="flex items-center gap-2 rounded-xl border border-rose-400 p-3">
-            <span className="flex-1 text-sm font-bold text-rose-500">Wirklich alles zurücksetzen?</span>
-            <button onClick={() => { resetProgress(); setConfirmReset(false) }} className="rounded-lg bg-rose-500 px-3 py-1.5 text-sm font-bold text-white">Ja</button>
-            <button onClick={() => setConfirmReset(false)} className="rounded-lg border px-3 py-1.5 text-sm font-bold">Nein</button>
+          <div className="flex items-center gap-2 p-3" style={{ borderColor: 'var(--border)' }}>
+            <Icon name="warning" size={26} />
+            <span className="flex-1 text-sm font-bold" style={{ color: '#ff4b4b' }}>Wirklich alles zurücksetzen?</span>
+            <button onClick={() => { resetProgress(); setConfirmReset(false) }} className="btn-3d px-3 py-1.5 text-xs text-white" style={{ background: '#ff4b4b', ['--btn-edge' as string]: '#d93636' }}>Ja</button>
+            <button onClick={() => setConfirmReset(false)} className="btn-3d border-2 px-3 py-1.5 text-xs" style={{ borderColor: 'var(--border)', ['--btn-edge' as string]: 'var(--border)' }}>Nein</button>
           </div>
         )}
       </div>
@@ -84,31 +139,139 @@ export default function ProfilePage() {
   )
 }
 
-function Stat({ icon, label, value }: { icon: string; label: string; value: string | number }) {
+function Stat({ icon, label, value, sub }: { icon: string; label: string; value: string | number; sub?: string }) {
   return (
-    <div className="flex flex-col items-center gap-1 rounded-2xl border p-3 text-center" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)', boxShadow: 'var(--card-shadow)' }}>
-      <span className="text-xl">{icon}</span>
-      <span className="text-lg font-extrabold">{value}</span>
-      <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{label}</span>
+    <div className="tile flex items-center gap-3 p-3">
+      <Icon name={icon} size={34} />
+      <div className="min-w-0">
+        <div className="text-xl font-black leading-tight">{value}</div>
+        <div className="truncate text-[11px] font-bold" style={{ color: 'var(--text-muted)' }}>{label}</div>
+        {sub && <div className="truncate text-[10px] font-semibold" style={{ color: 'var(--text-muted)', opacity: 0.8 }}>{sub}</div>}
+      </div>
     </div>
   )
 }
 
-function SettingRow({ label, active, onClick, disabled, disabledHint }: { label: string; active: boolean; onClick: () => void; disabled?: boolean; disabledHint?: string }) {
+function SettingRow({ icon, label, active, onClick }: { icon: string; label: string; active: boolean; onClick: () => void }) {
   return (
-    <div className="flex items-center justify-between rounded-xl border px-4 py-3" style={{ borderColor: 'var(--border)' }}>
-      <span className="font-bold">{label}</span>
-      {disabled ? (
-        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{disabledHint}</span>
-      ) : (
-        <button
-          onClick={onClick}
-          className="h-6 w-11 rounded-full p-0.5 transition-colors"
-          style={{ background: active ? 'var(--primary)' : 'var(--kb-key-bg)' }}
-        >
-          <span className="block h-5 w-5 rounded-full bg-white shadow transition-transform" style={{ transform: active ? 'translateX(20px)' : 'translateX(0)' }} />
-        </button>
-      )}
+    <div className="flex items-center gap-3 px-4 py-3" style={{ borderColor: 'var(--border)' }}>
+      <Icon name={icon} size={26} />
+      <span className="flex-1 font-bold">{label}</span>
+      <button
+        onClick={onClick}
+        role="switch"
+        aria-checked={active}
+        aria-label={label}
+        className="h-7 w-12 rounded-full p-0.5 transition-colors"
+        style={{ background: active ? '#58cc02' : 'var(--kb-key-bg)', boxShadow: 'inset 0 2px 0 rgba(0,0,0,.08)' }}
+      >
+        <span className="block h-6 w-6 rounded-full bg-white shadow transition-transform" style={{ transform: active ? 'translateX(20px)' : 'translateX(0)' }} />
+      </button>
+    </div>
+  )
+}
+
+/** GitHub-style calendar of the last 18 weeks: the more EP on a day, the stronger the green */
+function ActivityCalendar({ log }: { log: SessionLogEntry[] }) {
+  const WEEKS = 18
+  const xpByDay = new Map<string, number>()
+  for (const e of log) xpByDay.set(e.d, (xpByDay.get(e.d) ?? 0) + e.xp)
+  const today = new Date(todayISO() + 'T00:00:00Z')
+  const start = new Date(today)
+  start.setUTCDate(start.getUTCDate() - ((today.getUTCDay() + 6) % 7) - (WEEKS - 1) * 7)
+  const days = Array.from({ length: WEEKS * 7 }, (_, i) => {
+    const d = new Date(start)
+    d.setUTCDate(d.getUTCDate() + i)
+    const iso = d.toISOString().slice(0, 10)
+    return { iso, xp: xpByDay.get(iso) ?? 0, future: d > today }
+  })
+  const activeDays = days.filter((d) => d.xp > 0).length
+  const color = (xp: number) => (xp === 0 ? 'var(--kb-key-bg)' : xp < 15 ? '#c6f0a0' : xp < 40 ? '#89e219' : xp < 80 ? '#58cc02' : '#3a8a02')
+  return (
+    <div className="tile p-4">
+      <div className="flex justify-center gap-[3px] overflow-x-auto pb-1 scrollbar-thin">
+        <div className="mr-1 flex flex-col justify-between py-[1px] text-[9px] font-bold" style={{ color: 'var(--text-muted)' }}>
+          <span>Mo</span><span>Mi</span><span>Fr</span><span>So</span>
+        </div>
+        {Array.from({ length: WEEKS }, (_, w) => (
+          <div key={w} className="flex min-w-[12px] max-w-[22px] flex-1 flex-col gap-[3px]">
+            {days.slice(w * 7, w * 7 + 7).map((d) => (
+              <span
+                key={d.iso}
+                title={`${new Date(d.iso).toLocaleDateString('de-DE')}: ${d.xp} EP`}
+                className="aspect-square w-full rounded-[4px]"
+                style={{ background: d.future ? 'transparent' : color(d.xp), outline: d.iso === todayISO() ? '2px solid #ff9600' : undefined }}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 flex items-center justify-between text-[11px] font-bold" style={{ color: 'var(--text-muted)' }}>
+        <span>{activeDays} aktive Tage in den letzten {WEEKS} Wochen</span>
+        <span className="flex items-center gap-1">
+          weniger
+          {[0, 10, 30, 60, 100].map((x) => <span key={x} className="h-3 w-3 rounded-[3px]" style={{ background: color(x) }} />)}
+          mehr
+        </span>
+      </div>
+    </div>
+  )
+}
+
+/** line chart of the words per minute of the last sessions */
+function WpmChart({ log }: { log: SessionLogEntry[] }) {
+  const pts = log.slice(-24)
+  if (pts.length < 2) {
+    return (
+      <div className="tile flex items-center gap-4 p-5">
+        <Mascot mood="neutral" size={64} />
+        <p className="text-sm font-semibold" style={{ color: 'var(--text-muted)' }}>
+          Sobald du ein paar Lektionen getippt hast, siehst du hier, wie dein Tempo (Wörter pro Minute) mit der Zeit steigt.
+        </p>
+      </div>
+    )
+  }
+  const W = 600
+  const H = 180
+  const P = { l: 34, r: 12, t: 14, b: 22 }
+  const max = Math.max(10, Math.ceil(Math.max(...pts.map((p) => p.wpm)) / 10) * 10)
+  const x = (i: number) => P.l + (i / (pts.length - 1)) * (W - P.l - P.r)
+  const y = (v: number) => H - P.b - (v / max) * (H - P.t - P.b)
+  const line = pts.map((p, i) => `${i ? 'L' : 'M'} ${x(i).toFixed(1)} ${y(p.wpm).toFixed(1)}`).join(' ')
+  const area = `${line} L ${x(pts.length - 1)} ${H - P.b} L ${x(0)} ${H - P.b} Z`
+  const avg = Math.round(pts.reduce((a, p) => a + p.wpm, 0) / pts.length)
+  const first = pts[0].wpm
+  const last = pts[pts.length - 1].wpm
+  return (
+    <div className="tile p-4">
+      <div className="mb-2 flex flex-wrap gap-2 text-xs font-extrabold">
+        <span className="rounded-full px-2.5 py-1" style={{ background: 'var(--kb-key-bg)' }}>Ø {avg} WPM</span>
+        <span className="rounded-full px-2.5 py-1" style={{ background: 'var(--kb-key-bg)', color: last >= first ? '#58a700' : '#ff4b4b' }}>
+          {last >= first ? '+' : ''}{last - first} WPM seit Beginn
+        </span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label="Verlauf deiner Tippgeschwindigkeit">
+        <defs>
+          <linearGradient id="wpmfill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#1cb0f6" stopOpacity="0.35" />
+            <stop offset="1" stopColor="#1cb0f6" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {[0, 0.5, 1].map((f) => (
+          <g key={f}>
+            <line x1={P.l} x2={W - P.r} y1={y(max * f)} y2={y(max * f)} stroke="var(--border)" strokeWidth="1.5" strokeDasharray="4 5" />
+            <text x={P.l - 8} y={y(max * f) + 4} textAnchor="end" fontSize="11" fontWeight="700" fill="var(--text-muted)">{Math.round(max * f)}</text>
+          </g>
+        ))}
+        <path d={area} fill="url(#wpmfill)" />
+        <path d={line} fill="none" stroke="#1cb0f6" strokeWidth="3.5" strokeLinejoin="round" strokeLinecap="round" />
+        {pts.map((p, i) => (
+          <circle key={i} cx={x(i)} cy={y(p.wpm)} r={i === pts.length - 1 ? 6 : 3.5} fill={i === pts.length - 1 ? '#ff9600' : '#1cb0f6'} stroke="var(--bg-elevated)" strokeWidth="2">
+            <title>{`${p.wpm} WPM · ${p.acc}%`}</title>
+          </circle>
+        ))}
+        <text x={W - P.r} y={H - 4} textAnchor="end" fontSize="11" fontWeight="700" fill="var(--text-muted)">letzte {pts.length} Sitzungen</text>
+      </svg>
     </div>
   )
 }

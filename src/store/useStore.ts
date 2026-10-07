@@ -8,7 +8,7 @@ import { mulberry32, seedFromString } from '../data/content'
 import { SHOP_ITEMS } from '../data/shop'
 import type { LessonProgress, KeyStat, LessonResult, ViewKind, ActiveSession, ToastMsg, LeagueResultBanner } from '../types'
 
-function todayISO(d: Date = new Date()): string {
+export function todayISO(d: Date = new Date()): string {
   return d.toISOString().slice(0, 10)
 }
 
@@ -16,6 +16,15 @@ function dayDiff(aISO: string, bISO: string): number {
   const a = new Date(aISO + 'T00:00:00Z').getTime()
   const b = new Date(bISO + 'T00:00:00Z').getTime()
   return Math.round((b - a) / (24 * 60 * 60 * 1000))
+}
+
+/** one finished lesson / practice session, used for the activity calendar and the progress chart */
+export interface SessionLogEntry {
+  /** local date YYYY-MM-DD */
+  d: string
+  xp: number
+  wpm: number
+  acc: number
 }
 
 interface State {
@@ -54,6 +63,7 @@ interface State {
   bestCombo: number
   checkpointsCleared: number
   achievementsClaimed: Record<string, number>
+  sessionLog: SessionLogEntry[]
 
   // daily quest state
   dailyDateISO: string
@@ -148,6 +158,7 @@ export const useStore = create<State>()(
       bestCombo: 0,
       checkpointsCleared: 0,
       achievementsClaimed: {},
+      sessionLog: [],
 
       dailyDateISO: todayISO(),
       dailyQuests: buildDailyQuests(mulberry32(seedFromString(todayISO()))),
@@ -386,6 +397,7 @@ export const useStore = create<State>()(
           bestComboToday: Math.max(s.bestComboToday, result.maxCombo),
           leagueWeeklyXP: s.leagueWeeklyXP + xpEarned,
           xpBoostLessonsLeft: Math.max(0, s.xpBoostLessonsLeft - (result.isPractice ? 0 : 1)),
+          sessionLog: [...(s.sessionLog ?? []), { d: today, xp: xpEarned, wpm: result.wpm, acc: result.accuracy }].slice(-200),
         }
         set(nextState)
 
@@ -444,10 +456,10 @@ export const useStore = create<State>()(
         else if (newClaimed.length !== qState.claimedQuestIds.length) set({ claimedQuestIds: newClaimed })
 
         if (crownUp) {
-          get().pushToast({ icon: '👑', title: 'Kronen-Level aufgestiegen!', tone: 'success' })
+          get().pushToast({ icon: 'crown', title: 'Kronen-Level aufgestiegen!', tone: 'success' })
         }
         if (!result.isPractice && precisionHearts === 5) {
-          get().pushToast({ icon: '💎', title: 'Makellos! Präzisions-Bonus erhalten', subtitle: `+${precisionHearts} 💎`, tone: 'success' })
+          get().pushToast({ icon: 'gem', title: 'Makellos! Präzisions-Bonus erhalten', subtitle: `+${precisionHearts} Gems`, tone: 'success' })
         }
 
         return { xpEarned, gemsEarned: gemsEarned + gemBonus + questGemBonus, crownUp, precisionHearts }
@@ -471,7 +483,7 @@ export const useStore = create<State>()(
           unitsCompletedCount: completedUnitIds.length,
           gems: get().gems + 25,
         })
-        get().pushToast({ icon: '🚀', title: 'Einstufungstest abgeschlossen!', subtitle: 'Dein Lernpfad wurde angepasst.', tone: 'success' })
+        get().pushToast({ icon: 'rocket', title: 'Einstufungstest abgeschlossen!', subtitle: 'Dein Lernpfad wurde angepasst.', tone: 'success' })
       },
 
       resetProgress: () => {
@@ -481,7 +493,7 @@ export const useStore = create<State>()(
           streakFreezes: 0, lessonProgress: {}, keyStats: {}, currentUnitIndex: 0, placementDone: false,
           completedUnitIds: [],
           totalCharsTyped: 0, perfectLessons: 0, lessonsCompleted: 0, bestWpm: 0, unitsCompletedCount: 0,
-          earlyBirdCount: 0, nightOwlCount: 0, bestCombo: 0, checkpointsCleared: 0, achievementsClaimed: {},
+          earlyBirdCount: 0, nightOwlCount: 0, bestCombo: 0, checkpointsCleared: 0, achievementsClaimed: {}, sessionLog: [],
           dailyDateISO: todayISO(), dailyQuests: buildDailyQuests(mulberry32(seedFromString(todayISO()))),
           xpEarnedToday: 0, lessonsCompletedToday: 0, perfectLessonsToday: 0, charsTypedToday: 0,
           bestComboToday: 0, claimedQuestIds: [], leagueDivisionIndex: 0, leagueWeekStartISO: getWeekStartISO(),

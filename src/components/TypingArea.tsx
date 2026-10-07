@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import Keyboard from './Keyboard'
 import FingerGuide from './FingerGuide'
+import Icon from './Icon'
 import { fingerFor } from '../data/keyboard'
 import { useSound } from '../hooks/useSound'
 import type { LessonResult } from '../types'
@@ -132,11 +133,13 @@ export default function TypingArea({ text, onFinish, onAbort }: Props) {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-5 px-3">
       <div className="flex w-full items-center gap-3">
-        <button onClick={onAbort} className="rounded-full border px-2 py-2 text-lg leading-none" style={{ borderColor: 'var(--border)' }} aria-label="Abbrechen">
-          ✕
+        <button onClick={onAbort} className="rounded-lg p-1.5 opacity-50 transition-opacity hover:opacity-100" aria-label="Abbrechen">
+          <Icon name="close" size={22} />
         </button>
-        <div className="h-3 flex-1 overflow-hidden rounded-full" style={{ background: 'var(--kb-key-bg)' }}>
-          <div className="h-full rounded-full transition-all duration-200" style={{ width: `${progressPct}%`, background: 'var(--primary)' }} />
+        <div className="h-4 flex-1 overflow-hidden rounded-full" style={{ background: 'var(--kb-key-bg)' }}>
+          <div className="h-full rounded-full transition-all duration-200" style={{ width: `${progressPct}%`, background: '#58cc02' }}>
+            <div className="mx-2 mt-[3px] h-1 rounded-full bg-white/40" />
+          </div>
         </div>
         <div
           className="flex items-center gap-0.5 rounded-full px-2 py-1 text-base"
@@ -144,15 +147,15 @@ export default function TypingArea({ text, onFinish, onAbort }: Props) {
           title="Präzisions-Bonus: bleibt erhalten, solange du wenig Fehler machst – kostet dich nie das Weiterlernen"
         >
           {Array.from({ length: 5 }).map((_, i) => (
-            <span key={i} style={{ opacity: i < precisionHearts ? 1 : 0.25 }}>❤️</span>
+            <Icon key={i} name="heart" size={20} muted={i >= precisionHearts} />
           ))}
         </div>
       </div>
 
       <div className="flex w-full items-center justify-center gap-6 text-sm font-semibold" style={{ color: 'var(--text-muted)' }}>
-        <span>⚡ {liveWpm} WPM</span>
-        <span>🎯 {liveAccuracy}%</span>
-        <span className={combo >= 10 ? 'text-orange-500' : ''}>🔥 Combo {combo}</span>
+        <span className="flex items-center gap-1"><Icon name="bolt" size={18} /> {liveWpm} WPM</span>
+        <span className="flex items-center gap-1"><Icon name="target" size={18} /> {liveAccuracy}%</span>
+        <span className={`flex items-center gap-1 ${combo >= 10 ? 'text-orange-500' : ''}`}><Icon name={combo > 0 ? 'flame' : 'flameGray'} size={18} /> Combo {combo}</span>
       </div>
 
       <div
