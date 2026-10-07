@@ -1,11 +1,12 @@
 import { join } from 'node:path'
 import { evaluateRules, type HostOs } from './ruleEvaluator'
-import type { Library, VersionJson } from './versionJsonTypes'
+import type { VersionJson } from './versionJsonTypes'
 import { paths } from '../storage/paths'
 import type { DownloadTask } from '../network/downloader'
 
 function mavenNameToRelativePath(name: string): { path: string; fileName: string } {
-  const [coordinates, classifier] = name.split('@')
+  const [coordinatesPart, classifier] = name.split('@')
+  const coordinates = coordinatesPart ?? name
   const parts = coordinates.split(':')
   const group = parts[0] ?? ''
   const artifact = parts[1] ?? ''

@@ -41,8 +41,9 @@ export const accountStore = {
     const result = await store.update((file) => {
       const remaining = file.accounts.filter((a) => a.id !== accountId)
       const hadActive = file.accounts.find((a) => a.id === accountId)?.isActive
-      if (hadActive && remaining.length > 0 && !remaining.some((a) => a.isActive)) {
-        remaining[0] = { ...remaining[0], isActive: true }
+      const first = remaining[0]
+      if (hadActive && first && !remaining.some((a) => a.isActive)) {
+        remaining[0] = { ...first, isActive: true }
       }
       return { accounts: remaining }
     })

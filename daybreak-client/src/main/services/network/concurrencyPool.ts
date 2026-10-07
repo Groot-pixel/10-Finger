@@ -4,7 +4,7 @@ export async function runWithConcurrencyLimit<T, R>(
   limit: number,
   worker: (item: T, index: number) => Promise<R>
 ): Promise<R[]> {
-  const results: R[] = new Array(items.length)
+  const results: R[] = Array.from({ length: items.length })
   let nextIndex = 0
 
   async function runNext(): Promise<void> {

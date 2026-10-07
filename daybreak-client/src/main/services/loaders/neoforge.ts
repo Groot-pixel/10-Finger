@@ -28,7 +28,7 @@ export async function resolveNeoForgeVersion(minecraftVersion: string): Promise<
   const patch = match[2] ?? '0'
   const prefix = `${minor}.${patch}.`
   const versions = await listNeoForgeVersions()
-  const matching = versions.filter((v) => v.startsWith(prefix)).sort().reverse()
+  const matching = versions.filter((v) => v.startsWith(prefix)).toSorted().toReversed()
   const chosen = matching[0]
   if (!chosen) {
     throw new Error(`Keine NeoForge-Version für Minecraft ${minecraftVersion} gefunden`)

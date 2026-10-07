@@ -40,10 +40,11 @@ export const profileInputSchema = z.discriminatedUnion('edition', [
 
 export const profileIdSchema = z.string().uuid().or(z.literal('daybreak-default'))
 
-export const profileUpdateSchema = z.object({
-  id: profileIdSchema,
-  patch: profileInputSchema.partial().and(z.object({ edition: editionSchema }))
-})
+/** A partial update must still pick a concrete edition variant - .partial() can't distribute over a discriminated union directly. */
+export const profilePatchSchema = z.union([
+  javaProfileInputSchema.partial().extend({ edition: z.literal('java') }),
+  bedrockProfileInputSchema.partial().extend({ edition: z.literal('bedrock') })
+])
 
 export const appSettingsInputSchema = z.object({
   language: languageSchema.optional(),
@@ -99,7 +100,7 @@ export const serverListEntryInputSchema = z.object({
     .trim()
     .min(1)
     .max(256)
-    .regex(/^[a-zA-Z0-9.\-]+(:\d{1,5})?$/, 'Ungültige Server-Adresse'),
+    .regex(/^[a-zA-Z0-9.-]+(:\d{1,5})?$/, 'Ungültige Server-Adresse'),
   profileId: profileIdSchema
 })
 

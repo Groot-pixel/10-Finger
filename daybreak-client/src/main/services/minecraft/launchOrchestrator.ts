@@ -167,7 +167,6 @@ export async function launchJavaProfile(profile: JavaProfile, auth: LaunchAuth, 
       consoleHistory.push(line)
       if (consoleHistory.length > CONSOLE_HISTORY_LIMIT) consoleHistory.shift()
       launchEvents.emitConsoleLine({ profileId: profile.id, stream, line, timestamp: new Date().toISOString() })
-      if (stream === 'system') return
       if (consoleHistory.length === 1) {
         launchEvents.emitProgress({ profileId: profile.id, phase: 'running', message: 'Minecraft läuft', progress: null, total: null })
       }

@@ -35,7 +35,8 @@ const api: DaybreakApi = {
     startMicrosoftLogin: () => ipcRenderer.invoke(IPC.accountsStartMicrosoftLogin),
     cancelMicrosoftLogin: () => ipcRenderer.invoke(IPC.accountsCancelMicrosoftLogin),
     setActive: (accountId) => ipcRenderer.invoke(IPC.accountsSetActive, accountId),
-    remove: (accountId) => ipcRenderer.invoke(IPC.accountsRemove, accountId)
+    remove: (accountId) => ipcRenderer.invoke(IPC.accountsRemove, accountId),
+    onLoginResult: (cb) => subscribe(IPC_EVENTS.accountsLoginResult, cb)
   },
   profiles: {
     list: () => ipcRenderer.invoke(IPC.profilesList),

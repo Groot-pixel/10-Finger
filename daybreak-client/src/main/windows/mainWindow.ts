@@ -27,6 +27,20 @@ export function createMainWindow(): BrowserWindow {
     window.show()
   })
 
+  // Surface renderer/preload failures in the main process log instead of a silently blank
+  // window - there is no on-screen error boundary yet in Phase 1.
+  window.webContents.on('preload-error', (_event, preloadPath, error) => {
+    console.error(`[Daybreak Client] Preload-Skript ${preloadPath} fehlgeschlagen:`, error)
+  })
+  window.webContents.on('console-message', (event) => {
+    if (event.level === 'error' || event.level === 'warning') {
+      console.error(`[renderer] ${event.sourceId}:${event.lineNumber} ${event.message}`)
+    }
+  })
+  window.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
+    console.error(`[Daybreak Client] Laden der Oberfläche fehlgeschlagen (${errorCode}): ${errorDescription}`)
+  })
+
   // Any link clicked inside the app opens in the user's real browser, never a second
   // Electron window with full Node/Electron access.
   window.webContents.setWindowOpenHandler((details) => {

@@ -142,6 +142,7 @@ export function buildLaunchArguments(options: BuildLaunchArgumentsOptions): Buil
     jvmArgTokens = resolveArgumentValues(versionJson.arguments.jvm, ruleContext)
     gameArgTokens = resolveArgumentValues(versionJson.arguments.game, ruleContext)
     if (jvmArgTokens.length === 0) jvmArgTokens = defaultJvmArgTemplate()
+    if (gameArgTokens.length === 0) gameArgTokens = defaultGameArgTemplate()
   } else if (versionJson.minecraftArguments) {
     jvmArgTokens = defaultJvmArgTemplate()
     gameArgTokens = legacyMinecraftArgumentsToTokens(versionJson.minecraftArguments)

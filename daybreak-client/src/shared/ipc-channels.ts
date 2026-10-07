@@ -73,5 +73,6 @@ export const IPC_EVENTS = {
   launchProgress: 'event:launch:progress',
   launchConsoleLine: 'event:launch:consoleLine',
   launchCrash: 'event:launch:crash',
-  updateStatus: 'event:update:status'
+  updateStatus: 'event:update:status',
+  accountsLoginResult: 'event:accounts:loginResult'
 } as const

@@ -43,7 +43,7 @@ function findLatestCrashReport(gameDir: string): Promise<string | null> {
   return fs
     .readdir(join(gameDir, 'crash-reports'))
     .then((files) => {
-      const reports = files.filter((f) => f.endsWith('.txt')).sort().reverse()
+      const reports = files.filter((f) => f.endsWith('.txt')).toSorted().toReversed()
       return reports[0] ? join(gameDir, 'crash-reports', reports[0]) : null
     })
     .catch(() => null)

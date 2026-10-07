@@ -111,7 +111,9 @@ export async function findJavaForVersion(majorVersion: number): Promise<Detected
   const installed = await scanInstalledJava()
   const exact = installed.find((j) => j.majorVersion === majorVersion)
   if (exact) return exact
-  const newer = installed.filter((j) => j.majorVersion >= majorVersion).sort((a, b) => a.majorVersion - b.majorVersion)
+  const newer = installed
+    .filter((j) => j.majorVersion >= majorVersion)
+    .toSorted((a, b) => a.majorVersion - b.majorVersion)
   return newer[0] ?? null
 }
 

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { profilesFileSchema } from '@shared/schemas'
-import type { Profile } from '@shared/types'
+import type { BedrockProfile, JavaProfile, Profile } from '@shared/types'
 import { DEFAULT_PROFILE_ID, DEFAULT_PROFILE_NAME } from '@shared/constants'
 import { JsonStore } from './jsonStore'
 import { paths } from './paths'
@@ -8,6 +8,11 @@ import { paths } from './paths'
 interface ProfilesFile {
   profiles: Profile[]
 }
+
+type GeneratedProfileFields = 'id' | 'createdAt' | 'updatedAt' | 'lastPlayedAt' | 'totalPlaytimeSeconds'
+
+/** Omit<Profile, K> would collapse the union to only its common keys - this distributes it per variant instead. */
+type NewProfileInput = Omit<JavaProfile, GeneratedProfileFields> | Omit<BedrockProfile, GeneratedProfileFields>
 
 function defaultProfilesFile(): ProfilesFile {
   const now = new Date().toISOString()
@@ -45,7 +50,7 @@ export const profileStore = {
     const file = await store.read()
     return file.profiles.find((p) => p.id === id) ?? null
   },
-  async add(profile: Omit<Profile, 'id' | 'createdAt' | 'updatedAt' | 'lastPlayedAt' | 'totalPlaytimeSeconds'>): Promise<Profile> {
+  async add(profile: NewProfileInput): Promise<Profile> {
     const now = new Date().toISOString()
     const full = {
       ...profile,

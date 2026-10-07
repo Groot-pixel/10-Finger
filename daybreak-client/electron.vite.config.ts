@@ -24,7 +24,16 @@ export default defineConfig({
       }
     },
     build: {
-      outDir: 'out/preload'
+      outDir: 'out/preload',
+      // Electron's sandboxed preload loader cannot execute ESM `import` syntax even from a
+      // .mjs file, so the preload bundle is forced to plain CommonJS regardless of the
+      // project's "type": "module" - main and renderer stay ESM.
+      rollupOptions: {
+        output: {
+          format: 'cjs',
+          entryFileNames: '[name].js'
+        }
+      }
     }
   },
   renderer: {

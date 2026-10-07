@@ -57,10 +57,12 @@ export interface DaybreakApi {
   }
   accounts: {
     list: () => Promise<MinecraftAccountProfile[]>
+    /** Resolves as soon as the device code is known; the actual login keeps running - subscribe to onLoginResult for the outcome. */
     startMicrosoftLogin: () => Promise<AppResult<DeviceCodePrompt>>
     cancelMicrosoftLogin: () => Promise<void>
     setActive: (accountId: string) => Promise<AppResult<MinecraftAccountProfile[]>>
     remove: (accountId: string) => Promise<AppResult<MinecraftAccountProfile[]>>
+    onLoginResult: (cb: (result: AppResult<MinecraftAccountProfile[]>) => void) => () => void
   }
   profiles: {
     list: () => Promise<Profile[]>
