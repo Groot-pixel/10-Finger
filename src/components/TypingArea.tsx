@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from 'react'
 import Keyboard from './Keyboard'
 import FingerGuide from './FingerGuide'
 import Icon from './Icon'
@@ -48,6 +48,8 @@ export default function TypingArea({ text, onFinish, onAbort }: Props) {
   const finishedRef = useRef(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const charRefs = useRef<(HTMLSpanElement | null)[]>([])
+  const boxRef = useRef<HTMLDivElement>(null)
+  const [shift, setShift] = useState(0)
 
   const play = useSound()
 
@@ -58,6 +60,21 @@ export default function TypingArea({ text, onFinish, onAbort }: Props) {
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 250)
     return () => clearInterval(id)
+  }, [])
+
+  // ticker: the text runs in one line and slides left with every letter, so the current letter
+  // always stays at the same spot (about a third into the box)
+  useLayoutEffect(() => {
+    const box = boxRef.current
+    const el = charRefs.current[Math.min(index, text.length - 1)]
+    if (!box || !el) return
+    const anchor = box.clientWidth * 0.33
+    setShift(Math.max(0, el.offsetLeft + el.offsetWidth / 2 - anchor))
+  }, [index, text, bigText])
+  useEffect(() => {
+    const onResize = () => setShift((v) => v + 0.001)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
   }, [])
 
   // Esc asks before leaving the lesson (like Duolingo's "Wait, don't go!")
@@ -140,8 +157,6 @@ export default function TypingArea({ text, onFinish, onAbort }: Props) {
     const nextIndex = index + 1
     setIndex(nextIndex)
 
-    const el = charRefs.current[nextIndex]
-    el?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' })
 
     if (nextIndex >= text.length) {
       setTimeout(() => { play('complete'); finish() }, 50)
@@ -196,12 +211,23 @@ export default function TypingArea({ text, onFinish, onAbort }: Props) {
       </div>
 
       <div
+        ref={boxRef}
         onClick={() => inputRef.current?.focus()}
-        className={`w-full cursor-text rounded-2xl border p-5 leading-relaxed tracking-wide ${bigText ? 'text-2xl sm:text-4xl' : 'text-xl sm:text-2xl'}`}
-        style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', fontFamily: 'ui-monospace, Consolas, monospace', maxHeight: bigText ? '13rem' : '9.5rem', overflowY: 'auto' }}
+        className={`relative w-full cursor-text overflow-hidden rounded-2xl border py-5 leading-relaxed tracking-wide ${bigText ? 'text-3xl sm:text-5xl' : 'text-2xl sm:text-3xl'}`}
+        style={{
+          background: 'var(--bg-elevated)',
+          borderColor: 'var(--border)',
+          fontFamily: 'ui-monospace, Consolas, monospace',
+          // soft fade at both edges of the running text
+          maskImage: 'linear-gradient(90deg, transparent 0, #000 12%, #000 88%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(90deg, transparent 0, #000 12%, #000 88%, transparent 100%)',
+        }}
         key={shakeKey}
       >
-        <span className="shake-wrap">
+        <span
+          className="shake-wrap relative block whitespace-pre"
+          style={{ paddingLeft: '33%', paddingRight: '60%', transform: `translateX(${-Math.round(shift)}px)`, transition: 'transform 0.18s ease-out', willChange: 'transform' }}
+        >
           {text.split('').map((c, i) => {
             const status = statuses[i]
             const isCurrent = i === index
