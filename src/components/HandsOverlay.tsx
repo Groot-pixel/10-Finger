@@ -142,7 +142,7 @@ function slim(pts: Pts, hand: HandSide, part: HandPart): Pts {
     const px = pts[i] - s.root.x
     const py = pts[i + 1] - s.root.y
     const t = (px * ax + py * ay) / L2
-    const u = Math.min(1, Math.max(0, (t - 0.5) / 0.45))
+    const u = Math.min(1, Math.max(0, (t - 0.15) / 0.45))
     const k = (1 - s.n) * u * u * (3 - 2 * u)
     // pull the point towards the centre line by k
     out[i] = pts[i] - k * (px - t * ax)
