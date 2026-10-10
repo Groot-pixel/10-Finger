@@ -186,41 +186,82 @@ function toPath(pts: Pts, map: (x: number, y: number) => [number, number], close
   return closed ? d + ' Z' : d
 }
 
-/** remembers the tip of a moving finger and eases it to its target; restarts from home when another finger takes over */
-function useFingerTip(id: string | null, home: Point | null, target: Point | null): Point | null {
-  const [pos, setPos] = useState<Point | null>(target)
+/**
+ * Animates one finger tip: towards its key (ease-out), and when another finger takes over or the
+ * finger is no longer needed, the same motion is played backwards so the finger glides home again
+ * instead of jumping. Returns the moving tip and, while it is still on its way, the returning one.
+ */
+const TIP_MS = 160
+function useFingerTip(id: string | null, home: Point | null, target: Point | null) {
+  const [tip, setTip] = useState<Point | null>(null)
+  const [back, setBack] = useState<{ id: string; pos: Point } | null>(null)
   const lastId = useRef<string | null>(null)
+  const lastHome = useRef<Point | null>(null)
   const current = useRef<Point | null>(null)
+  const backRef = useRef<{ id: string; pos: Point } | null>(null)
   const raf = useRef<number | null>(null)
+  const rafBack = useRef<number | null>(null)
 
   useEffect(() => {
-    if (!target || !home) {
+    const prevId = lastId.current
+    // the previous finger leaves: play its way to the key backwards
+    if (prevId && prevId !== id && current.current && lastHome.current) {
+      const from = current.current
+      const to = lastHome.current
+      const start = performance.now()
+      if (rafBack.current !== null) cancelAnimationFrame(rafBack.current)
+      const stepBack = (now: number) => {
+        const t = Math.min(1, (now - start) / TIP_MS)
+        const e = t * t * t // reverse of the ease-out used on the way there
+        const pos = { x: from.x + (to.x - from.x) * e, y: from.y + (to.y - from.y) * e }
+        backRef.current = t < 1 ? { id: prevId, pos } : null
+        setBack(backRef.current)
+        if (t < 1) rafBack.current = requestAnimationFrame(stepBack)
+      }
+      rafBack.current = requestAnimationFrame(stepBack)
+    }
+
+    if (raf.current !== null) cancelAnimationFrame(raf.current)
+    if (!id || !target || !home) {
       lastId.current = id
+      lastHome.current = home
       current.current = null
-      setPos(null)
+      setTip(null)
       return
     }
-    const from = lastId.current === id && current.current ? current.current : home
+    // start from where the finger is right now (also if it was just on its way home)
+    let from = home
+    if (prevId === id && current.current) from = current.current
+    else if (backRef.current?.id === id) {
+      from = backRef.current.pos
+      if (rafBack.current !== null) cancelAnimationFrame(rafBack.current)
+      backRef.current = null
+      setBack(null)
+    }
     lastId.current = id
+    lastHome.current = home
     const start = performance.now()
-    const dur = 160
-    if (raf.current !== null) cancelAnimationFrame(raf.current)
     const step = (now: number) => {
-      const t = Math.min(1, (now - start) / dur)
+      const t = Math.min(1, (now - start) / TIP_MS)
       const e = 1 - Math.pow(1 - t, 3)
       const p = { x: from.x + (target.x - from.x) * e, y: from.y + (target.y - from.y) * e }
       current.current = p
-      setPos(p)
+      setTip(p)
       if (t < 1) raf.current = requestAnimationFrame(step)
     }
     raf.current = requestAnimationFrame(step)
-    return () => {
-      if (raf.current !== null) cancelAnimationFrame(raf.current)
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, home?.x, home?.y, target?.x, target?.y])
 
-  return pos
+  useEffect(
+    () => () => {
+      if (raf.current !== null) cancelAnimationFrame(raf.current)
+      if (rafBack.current !== null) cancelAnimationFrame(rafBack.current)
+    },
+    [],
+  )
+
+  return { tip, back }
 }
 
 function splitFinger(f: FingerId): { hand: HandSide; part: HandPart } {
@@ -256,8 +297,10 @@ export default function HandsOverlay({ keyRects, nextChar }: Props) {
     if (part === 'thumb') return null
     return keyRects.get(HOME_KEY[hand][part]) ?? null
   }
-  const letterTip = useFingerTip(letterFinger, homeOf(letterFinger), letterTarget)
-  const shiftTip = useFingerTip(shiftTarget ? shiftKey : null, homeOf(shiftFinger), shiftTarget)
+  const letterMove = useFingerTip(letterFinger, homeOf(letterFinger), letterTarget)
+  const shiftMove = useFingerTip(shiftTarget ? shiftFinger : null, homeOf(shiftFinger), shiftTarget)
+  const letterTip = letterMove.tip
+  const shiftTip = shiftMove.tip
 
   if (!ready || u < 4) return null
 
@@ -282,6 +325,13 @@ export default function HandsOverlay({ keyRects, nextChar }: Props) {
     const { hand } = splitFinger(shiftFinger)
     reach[hand].pinky = toRef(hand, shiftTip)
     active.push({ hand, part: 'pinky', target: shiftTip, color: FINGER_COLOR[shiftFinger] })
+  }
+  // fingers gliding back to their home keys (not highlighted any more)
+  for (const back of [letterMove.back, shiftMove.back]) {
+    if (!back) continue
+    const { hand, part } = splitFinger(back.id as FingerId)
+    if (part === 'thumb' || reach[hand][part]) continue
+    reach[hand][part] = toRef(hand, back.pos)
   }
 
   const fills: string[] = []
