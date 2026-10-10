@@ -3,8 +3,8 @@ import TypingArea from '../components/TypingArea'
 import Mascot from '../components/Mascot'
 import Icon from '../components/Icon'
 import Confetti from '../components/Confetti'
-import { useStore } from '../store/useStore'
-import { generateLessonText } from '../engine/textGenerator'
+import { useStore, unlockedKeysForPlayer } from '../store/useStore'
+import { generateLessonText, generateWeakKeyPractice } from '../engine/textGenerator'
 import { lessonById } from '../data/curriculum'
 import type { LessonResult } from '../types'
 
@@ -22,6 +22,7 @@ export default function LessonPage() {
   const applyPlacement = useStore((s) => s.applyPlacement)
   const setView = useStore((s) => s.setView)
   const lessonProgress = useStore((s) => s.lessonProgress)
+  const startPractice = useStore((s) => s.startPractice)
 
   const [result, setResult] = useState<LessonResult | null>(null)
   const [reward, setReward] = useState<{ xpEarned: number; gemsEarned: number; crownUp: boolean; precisionHearts: number } | null>(null)
@@ -41,6 +42,23 @@ export default function LessonPage() {
     setResult(null)
     setReward(null)
   }, [session])
+
+  // Enter continues on the result screen, like in Duolingo
+  useEffect(() => {
+    if (!result) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Enter' || e.repeat) return
+      e.preventDefault()
+      cancelSession()
+      setView('path')
+    }
+    // ignore the Enter that may still be held from typing the last character
+    const id = setTimeout(() => window.addEventListener('keydown', onKey), 300)
+    return () => {
+      clearTimeout(id)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [result, cancelSession, setView])
 
   if (!session) return null
 
@@ -69,6 +87,10 @@ export default function LessonPage() {
 
   if (result && reward) {
     const passed = session.kind === 'placement' || result.accuracy >= 70
+    const mistakeKeys = Object.entries(result.errorsByChar)
+      .filter(([, n]) => n > 0)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
     const unit = session.lessonId ? lessonById(session.lessonId)?.unit : undefined
 
     return (
@@ -114,6 +136,22 @@ export default function LessonPage() {
           </div>
         )}
 
+        {/* the keys that went wrong, with a one-click practice for exactly these */}
+        {mistakeKeys.length > 0 && (
+          <div className="tile flex w-full max-w-md flex-col items-center gap-2 p-4">
+            <div className="text-sm font-extrabold">Hier hast du dich vertippt</div>
+            <div className="flex flex-wrap justify-center gap-1.5">
+              {mistakeKeys.map(([ch, n]) => (
+                <span key={ch} className="flex items-center gap-1 rounded-lg px-2 py-1 text-sm font-black" style={{ background: 'var(--kb-key-bg)' }}>
+                  {ch === ' ' ? '␣' : ch}
+                  <span className="text-[10px] font-bold" style={{ color: '#ff6b6b' }}>×{n}</span>
+                </span>
+              ))}
+            </div>
+            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Zeit: {formatTime(result.durationSec)}</div>
+          </div>
+        )}
+
         {!passed && session.kind === 'path' && (
           <p style={{ color: 'var(--text-muted)' }}>Fast geschafft – für die Krone brauchst du mindestens 70% Genauigkeit. Kein Stress, probier's einfach nochmal!</p>
         )}
@@ -125,7 +163,20 @@ export default function LessonPage() {
             style={{ background: '#2fb9a8', ['--btn-edge' as string]: '#168e83' }}
           >
             {session.kind === 'placement' ? 'Zum Lernpfad' : 'Weiter'}
+            <span className="ml-2 hidden rounded border border-white/40 px-1 text-[10px] sm:inline">Enter</span>
           </button>
+          {mistakeKeys.length > 0 && session.kind !== 'placement' && (
+            <button
+              onClick={() => {
+                const keys = mistakeKeys.map(([ch]) => ch.toLowerCase()).filter((ch) => ch.trim())
+                startPractice(generateWeakKeyPractice(keys, unlockedKeysForPlayer(), 90).text)
+              }}
+              className="btn-3d min-w-40 border-2 px-6 py-3"
+              style={{ borderColor: 'var(--border)', color: '#e68743', ['--btn-edge' as string]: 'var(--border)' }}
+            >
+              Fehler üben
+            </button>
+          )}
           {session.kind === 'path' && (
             <button
               onClick={() => { setResult(null); setReward(null) }}
@@ -159,6 +210,11 @@ export default function LessonPage() {
       />
     </div>
   )
+}
+
+function formatTime(sec: number): string {
+  const s = Math.max(0, Math.round(sec))
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }
 
 /** result card in the style of Duolingo: coloured frame with the label on top */

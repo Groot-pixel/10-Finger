@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useStore, levelFromXP, todayISO, type SessionLogEntry } from '../store/useStore'
 import { CURRICULUM } from '../data/curriculum'
 import { ABC_TEXT } from '../data/keyboard'
@@ -29,6 +29,39 @@ export default function ProfilePage() {
   const resetProgress = useStore((s) => s.resetProgress)
   const setView = useStore((s) => s.setView)
   const startPractice = useStore((s) => s.startPractice)
+  const setName = useStore((s) => s.setName)
+  const setSetting = useStore((s) => s.setSetting)
+  const importSave = useStore((s) => s.importSave)
+  const pushToast = useStore((s) => s.pushToast)
+  const showHands = useStore((s) => s.showHands)
+  const showKeyboard = useStore((s) => s.showKeyboard)
+  const showFingerGuide = useStore((s) => s.showFingerGuide)
+  const bigText = useStore((s) => s.bigText)
+  const [editingName, setEditingName] = useState(false)
+  const [nameDraft, setNameDraft] = useState(name)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  /** download the whole progress as a small backup file */
+  const exportSave = () => {
+    const state = Object.fromEntries(Object.entries(useStore.getState()).filter(([k, v]) => typeof v !== 'function' && !['toasts', 'activeSession', 'view'].includes(k)))
+    const blob = new Blob([JSON.stringify({ app: 'zehnfinger', version: 1, savedAt: new Date().toISOString(), state }, null, 1)], { type: 'application/json' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `ZehnFinger-Backup-${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000)
+    pushToast({ icon: 'chest', title: 'Backup gespeichert', subtitle: 'Die Datei liegt in deinen Downloads.', tone: 'success' })
+  }
+  const loadSave = async (file: File) => {
+    try {
+      const ok = importSave(JSON.parse(await file.text()))
+      pushToast(ok
+        ? { icon: 'check', title: 'Fortschritt geladen', subtitle: 'Willkommen zurück!', tone: 'success' }
+        : { icon: 'warning', title: 'Das ist kein ZehnFinger-Backup', tone: 'warning' })
+    } catch {
+      pushToast({ icon: 'warning', title: 'Datei konnte nicht gelesen werden', tone: 'warning' })
+    }
+  }
 
   const [confirmReset, setConfirmReset] = useState(false)
   const { level, xpIntoLevel, xpForNextLevel } = levelFromXP(totalXP)
@@ -44,7 +77,32 @@ export default function ProfilePage() {
             <Mascot mood="happy" size={104} accessories={equippedCosmetics} />
           </div>
           <div className="flex-1 text-center sm:text-left">
-            <h1 className="text-3xl font-black">{name}</h1>
+            {editingName ? (
+              <form
+                className="flex items-center justify-center gap-2 sm:justify-start"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  setName(nameDraft)
+                  setEditingName(false)
+                }}
+              >
+                <input
+                  autoFocus
+                  value={nameDraft}
+                  maxLength={24}
+                  onChange={(e) => setNameDraft(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Escape' && setEditingName(false)}
+                  className="w-48 rounded-xl border-2 border-white/40 bg-black/20 px-3 py-1 text-xl font-black text-white outline-none"
+                  aria-label="Name"
+                />
+                <button type="submit" className="rounded-xl bg-white/25 px-3 py-1.5 text-sm font-extrabold">OK</button>
+              </form>
+            ) : (
+              <button onClick={() => { setNameDraft(name); setEditingName(true) }} className="group flex items-center gap-2" title="Namen ändern">
+                <h1 className="text-3xl font-black">{name}</h1>
+                <span className="opacity-60 transition-opacity group-hover:opacity-100"><Icon name="pencil" size={20} /></span>
+              </button>
+            )}
             <div className="text-sm font-semibold opacity-90">Dabei seit {since}</div>
             <div className="mt-3 flex flex-wrap justify-center gap-2 text-xs font-extrabold sm:justify-start">
               <span className="flex items-center gap-1 rounded-full bg-white/25 px-2.5 py-1"><Icon name="star" size={14} /> Level {level}</span>
@@ -113,6 +171,32 @@ export default function ProfilePage() {
       <h2 className="mb-3 text-lg font-extrabold">Einstellungen</h2>
       <div className="tile flex flex-col divide-y-2" style={{ borderColor: 'var(--border)' }}>
         <SettingRow icon="sound" label="Soundeffekte" active={soundEnabled} onClick={toggleSound} />
+        <SettingRow icon="sparkle" label="Hände über der Tastatur" active={showHands} onClick={() => setSetting('showHands', !showHands)} />
+        <SettingRow icon="keyboard" label="Bildschirm-Tastatur" active={showKeyboard} onClick={() => setSetting('showKeyboard', !showKeyboard)} />
+        <SettingRow icon="target" label="Fingeranzeige" active={showFingerGuide} onClick={() => setSetting('showFingerGuide', !showFingerGuide)} />
+        <SettingRow icon="abc" label="Großer Übungstext" active={bigText} onClick={() => setSetting('bigText', !bigText)} />
+        <button onClick={exportSave} className="flex items-center gap-3 px-4 py-3 text-left font-bold" style={{ borderColor: 'var(--border)' }}>
+          <Icon name="chest" size={26} />
+          <span className="flex-1">
+            Fortschritt sichern
+            <span className="block text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>Lädt eine Backup-Datei herunter – z. B. für einen anderen PC</span>
+          </span>
+        </button>
+        <button onClick={() => fileRef.current?.click()} className="flex items-center gap-3 px-4 py-3 text-left font-bold" style={{ borderColor: 'var(--border)' }}>
+          <Icon name="repeat" size={26} />
+          <span className="flex-1">Fortschritt laden</span>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              if (f) void loadSave(f)
+              e.target.value = ''
+            }}
+          />
+        </button>
         <button onClick={() => setView('placement')} className="flex items-center gap-3 px-4 py-3 text-left font-bold" style={{ borderColor: 'var(--border)' }}>
           <Icon name="rocket" size={26} />
           <span className="flex-1">Einstufungstest erneut machen</span>

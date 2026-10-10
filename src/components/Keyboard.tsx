@@ -12,6 +12,8 @@ function textOn(hex: string): string {
 
 interface Props {
   nextChar: string | null
+  /** show the hands over the keyboard */
+  hands?: boolean
 }
 
 function Key({ k, active }: { k: KeyDef; active: boolean }) {
@@ -53,7 +55,7 @@ function ShiftKey({ id, active }: { id: 'shiftL' | 'shift'; active: boolean }) {
   )
 }
 
-export default function Keyboard({ nextChar }: Props) {
+export default function Keyboard({ nextChar, hands = true }: Props) {
   const shiftKey = nextChar ? shiftKeyFor(nextChar) : null
   const containerRef = useRef<HTMLDivElement>(null)
   const keyRects = useKeyRects(containerRef)
@@ -61,7 +63,7 @@ export default function Keyboard({ nextChar }: Props) {
   return (
     <div className="relative mb-20 w-full rounded-2xl border p-1.5 sm:mb-36 sm:p-3" style={{ background: 'var(--kb-panel-bg)', borderColor: 'var(--kb-border)' }}>
       <div ref={containerRef} className="relative flex flex-col gap-1 sm:gap-1.5">
-        <HandsOverlay keyRects={keyRects} nextChar={nextChar} />
+        {hands && <HandsOverlay keyRects={keyRects} nextChar={nextChar} />}
         {KEY_ROWS.map((row, i) => (
           <div key={i} className="flex gap-0.5 sm:gap-1.5" style={{ paddingLeft: `${i * 2.2}%` }}>
             {row.map((k) => (

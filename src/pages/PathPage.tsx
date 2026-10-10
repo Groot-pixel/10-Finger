@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useStore } from '../store/useStore'
+import { useStore, todayISO } from '../store/useStore'
 import { CURRICULUM, ALL_LESSON_IDS, lessonIndex, type LessonType, type UnitDef } from '../data/curriculum'
 import { CHAR_FINGER_MAP, FINGER_COLOR, FINGER_LABEL, type FingerId } from '../data/keyboard'
 import Mascot, { type MascotMood } from '../components/Mascot'
@@ -48,6 +48,9 @@ export default function PathPage() {
   const placementDone = useStore((s) => s.placementDone)
   const equippedCosmetics = useStore((s) => s.equippedCosmetics)
   const streak = useStore((s) => s.currentStreak)
+  const lastPractice = useStore((s) => s.lastPracticeDateISO)
+  const streakFreezes = useStore((s) => s.streakFreezes)
+  const streakAtRisk = streak > 0 && lastPractice !== todayISO()
   const [openGuide, setOpenGuide] = useState<string | null>(null)
 
   const isUnlocked = (lessonId: string) => {
@@ -87,6 +90,25 @@ export default function PathPage() {
             <div className="flex-1">
               <div className="font-extrabold">Schon Tipp-Erfahrung?</div>
               <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Mach den Einstufungstest und spring direkt zu deinem Level!</div>
+            </div>
+            <Icon name="chevron" size={20} className="opacity-40" />
+          </button>
+        )}
+
+        {/* reminder: today's practice is still missing */}
+        {streakAtRisk && (
+          <button
+            onClick={() => nextLessonId && startPathLesson(nextLessonId)}
+            className="pop-in mb-5 flex w-full items-center gap-4 rounded-2xl border-2 border-b-4 p-4 text-left"
+            style={{ borderColor: '#e68743', background: 'color-mix(in srgb, #e68743 12%, var(--bg-elevated))' }}
+          >
+            <Icon name="flame" size={44} />
+            <div className="flex-1">
+              <div className="font-extrabold">Deine {streak}-Tage-Serie ist in Gefahr!</div>
+              <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                Mach heute noch eine Lektion, um sie zu halten.
+                {streakFreezes > 0 ? ` (Du hast ${streakFreezes} Serien-Frost als Schutz.)` : ''}
+              </div>
             </div>
             <Icon name="chevron" size={20} className="opacity-40" />
           </button>

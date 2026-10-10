@@ -2,11 +2,21 @@ import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import Keyboard from './Keyboard'
 import FingerGuide from './FingerGuide'
 import Icon from './Icon'
+import Mascot from './Mascot'
+import { useStore } from '../store/useStore'
 import { fingerFor } from '../data/keyboard'
 import { useSound } from '../hooks/useSound'
 import type { LessonResult } from '../types'
 
 type CharStatus = 'pending' | 'correct' | 'incorrect' | 'current'
+
+/** Flowy cheers when you type this many characters in a row without a mistake */
+const CHEERS: Record<number, string> = {
+  20: '20 richtig in Folge – super!',
+  40: '40 ohne Fehler! Du bist im Flow!',
+  75: '75 am Stück – unglaublich!',
+  120: '120! Deine Finger fliegen!',
+}
 
 interface Props {
   text: string
@@ -21,6 +31,12 @@ export default function TypingArea({ text, onFinish, onAbort }: Props) {
   const [shakeKey, setShakeKey] = useState(0)
   const [now, setNow] = useState(Date.now())
   const [precisionHearts, setPrecisionHearts] = useState(5)
+  const [confirmExit, setConfirmExit] = useState(false)
+  const [cheer, setCheer] = useState<string | null>(null)
+  const showHands = useStore((s) => s.showHands)
+  const showKeyboard = useStore((s) => s.showKeyboard)
+  const showFingerGuide = useStore((s) => s.showFingerGuide)
+  const bigText = useStore((s) => s.bigText)
 
   const startTimeRef = useRef<number | null>(null)
   const mistakeCountRef = useRef(0)
@@ -44,6 +60,26 @@ export default function TypingArea({ text, onFinish, onAbort }: Props) {
     return () => clearInterval(id)
   }, [])
 
+  // Esc asks before leaving the lesson (like Duolingo's "Wait, don't go!")
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      e.preventDefault()
+      setConfirmExit((v) => !v)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+  useEffect(() => {
+    if (!confirmExit) inputRef.current?.focus()
+  }, [confirmExit])
+
+  useEffect(() => {
+    if (!cheer) return
+    const id = setTimeout(() => setCheer(null), 1800)
+    return () => clearTimeout(id)
+  }, [cheer])
+
   const finish = useCallback(() => {
     if (finishedRef.current) return
     finishedRef.current = true
@@ -66,7 +102,7 @@ export default function TypingArea({ text, onFinish, onAbort }: Props) {
   }, [index, onFinish])
 
   const processChar = useCallback((ch: string) => {
-    if (finishedRef.current || index >= text.length) return
+    if (finishedRef.current || index >= text.length || confirmExit) return
     if (startTimeRef.current === null) startTimeRef.current = Date.now()
     const target = text[index]
     attemptsByCharRef.current[target] = (attemptsByCharRef.current[target] ?? 0) + 1
@@ -84,6 +120,7 @@ export default function TypingArea({ text, onFinish, onAbort }: Props) {
         const nc = c + 1
         maxComboRef.current = Math.max(maxComboRef.current, nc)
         if (nc > 0 && nc % 15 === 0) play('combo')
+        if (CHEERS[nc]) setCheer(CHEERS[nc])
         return nc
       })
     } else {
@@ -109,7 +146,7 @@ export default function TypingArea({ text, onFinish, onAbort }: Props) {
     if (nextIndex >= text.length) {
       setTimeout(() => { play('complete'); finish() }, 50)
     }
-  }, [index, text, play, finish])
+  }, [index, text, play, finish, confirmExit])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
@@ -133,7 +170,7 @@ export default function TypingArea({ text, onFinish, onAbort }: Props) {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-5 px-3">
       <div className="flex w-full items-center gap-3">
-        <button onClick={onAbort} className="rounded-lg p-1.5 opacity-50 transition-opacity hover:opacity-100" aria-label="Abbrechen">
+        <button onClick={() => (index > 0 ? setConfirmExit(true) : onAbort())} className="rounded-lg p-1.5 opacity-50 transition-opacity hover:opacity-100" aria-label="Abbrechen" title="Lektion verlassen (Esc)">
           <Icon name="close" size={22} />
         </button>
         <div className="h-4 flex-1 overflow-hidden rounded-full" style={{ background: 'var(--kb-key-bg)' }}>
@@ -160,8 +197,8 @@ export default function TypingArea({ text, onFinish, onAbort }: Props) {
 
       <div
         onClick={() => inputRef.current?.focus()}
-        className={`w-full cursor-text rounded-2xl border p-5 text-xl leading-relaxed tracking-wide sm:text-2xl ${shakeKey ? '' : ''}`}
-        style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', fontFamily: 'ui-monospace, Consolas, monospace', maxHeight: '9.5rem', overflowY: 'auto' }}
+        className={`w-full cursor-text rounded-2xl border p-5 leading-relaxed tracking-wide ${bigText ? 'text-2xl sm:text-4xl' : 'text-xl sm:text-2xl'}`}
+        style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', fontFamily: 'ui-monospace, Consolas, monospace', maxHeight: bigText ? '13rem' : '9.5rem', overflowY: 'auto' }}
         key={shakeKey}
       >
         <span className="shake-wrap">
@@ -196,7 +233,7 @@ export default function TypingArea({ text, onFinish, onAbort }: Props) {
       <input
         ref={inputRef}
         onChange={handleChange}
-        onBlur={() => setTimeout(() => inputRef.current?.focus(), 10)}
+        onBlur={() => setTimeout(() => { if (!document.querySelector('[data-exit-dialog]')) inputRef.current?.focus() }, 10)}
         className="absolute h-px w-px opacity-0"
         autoCapitalize="off"
         autoCorrect="off"
@@ -205,8 +242,39 @@ export default function TypingArea({ text, onFinish, onAbort }: Props) {
         aria-label="Tipp-Eingabe"
       />
 
-      <FingerGuide active={activeFinger} />
-      <Keyboard nextChar={nextChar} />
+      {showFingerGuide && <FingerGuide active={activeFinger} />}
+      {showKeyboard && <Keyboard nextChar={nextChar} hands={showHands} />}
+
+      {/* Flowy cheering for a mistake-free run */}
+      {cheer && (
+        <div className="pop-in pointer-events-none fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-2xl border-2 px-4 py-2 shadow-lg" style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)' }}>
+          <Mascot mood="excited" size={52} />
+          <span className="font-extrabold">{cheer}</span>
+        </div>
+      )}
+
+      {confirmExit && (
+        <div data-exit-dialog className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center" onClick={() => setConfirmExit(false)}>
+          <div className="pop-in tile flex w-full max-w-sm flex-col items-center gap-3 p-6 text-center" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Lektion verlassen?">
+            <Mascot mood="sad" size={96} />
+            <div className="text-xl font-black">Warte, geh nicht!</div>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              Wenn du jetzt aufhörst, geht dein Fortschritt in dieser Lektion verloren.
+            </p>
+            <button
+              autoFocus
+              onClick={() => setConfirmExit(false)}
+              className="btn-3d w-full px-6 py-3 text-white"
+              style={{ background: '#2fb9a8', ['--btn-edge' as string]: '#168e83' }}
+            >
+              Weiter üben
+            </button>
+            <button onClick={onAbort} className="w-full py-2 text-sm font-extrabold uppercase tracking-wide" style={{ color: '#ff6b6b' }}>
+              Lektion beenden
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

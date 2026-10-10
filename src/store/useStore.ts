@@ -86,6 +86,11 @@ interface State {
   equippedCosmetics: string[]
   darkMode: boolean
   soundEnabled: boolean
+  /** lesson display options */
+  showHands: boolean
+  showKeyboard: boolean
+  showFingerGuide: boolean
+  bigText: boolean
 
   // ui
   view: ViewKind
@@ -105,6 +110,10 @@ interface State {
   useStreakFreeze: () => void
   toggleDarkMode: () => void
   toggleSound: () => void
+  setSetting: (key: 'showHands' | 'showKeyboard' | 'showFingerGuide' | 'bigText', value: boolean) => void
+  setName: (name: string) => void
+  /** replaces the whole progress with a backup; returns false if the file is not a ZehnFinger backup */
+  importSave: (data: unknown) => boolean
   setDailyGoal: (xp: number) => void
   pushToast: (t: Omit<ToastMsg, 'id'>) => void
   dismissToast: (id: string) => void
@@ -178,6 +187,10 @@ export const useStore = create<State>()(
       equippedCosmetics: [],
       darkMode: true,
       soundEnabled: true,
+      showHands: true,
+      showKeyboard: true,
+      showFingerGuide: true,
+      bigText: false,
 
       view: 'path',
       activeSession: null,
@@ -288,6 +301,18 @@ export const useStore = create<State>()(
 
       toggleDarkMode: () => set((s) => ({ darkMode: !s.darkMode })),
       toggleSound: () => set((s) => ({ soundEnabled: !s.soundEnabled })),
+      setSetting: (key, value) => set({ [key]: value } as Partial<State>),
+      setName: (name) => set({ name: name.trim().slice(0, 24) || 'Tippstar' }),
+      importSave: (data) => {
+        const d = data as { app?: string; state?: Record<string, unknown> } | null
+        if (!d || d.app !== 'zehnfinger' || typeof d.state !== 'object' || !d.state) return false
+        const s = d.state
+        if (typeof s.totalXP !== 'number' || typeof s.lessonProgress !== 'object') return false
+        // only take over saved data, never functions; transient UI state starts fresh
+        const clean = Object.fromEntries(Object.entries(s).filter(([, v]) => typeof v !== 'function'))
+        set({ ...(clean as Partial<State>), view: 'profile', activeSession: null, toasts: [] })
+        return true
+      },
       setDailyGoal: (xp) => set({ dailyGoalXP: xp }),
 
       completeLesson: (result) => {
