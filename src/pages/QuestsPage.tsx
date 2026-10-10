@@ -48,7 +48,7 @@ export default function QuestsPage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-8">
-      <div className="relative mb-6 overflow-hidden rounded-3xl px-6 py-5 text-white" style={{ background: 'linear-gradient(135deg, #ce82ff, #a568cc)', boxShadow: '0 5px 0 #8a4fb3' }}>
+      <div className="relative mb-6 overflow-hidden rounded-3xl px-6 py-5 text-white" style={{ background: 'linear-gradient(135deg, #eda958, #c27a35)', boxShadow: '0 5px 0 #925324' }}>
         <BannerPattern />
         <div className="relative flex items-center gap-4">
           <div className="flex-1">
@@ -72,12 +72,12 @@ export default function QuestsPage() {
         <div className="flex justify-between">
           {week.map((d) => (
             <div key={d.iso} className="flex flex-col items-center gap-1">
-              <span className="text-[11px] font-extrabold" style={{ color: d.isToday ? '#ff9600' : 'var(--text-muted)' }}>{d.label}</span>
+              <span className="text-[11px] font-extrabold" style={{ color: d.isToday ? '#e68743' : 'var(--text-muted)' }}>{d.label}</span>
               <span
                 className="flex h-9 w-9 items-center justify-center rounded-full"
                 style={{
-                  background: d.done ? '#ff9600' : 'var(--kb-key-bg)',
-                  boxShadow: d.isToday ? '0 0 0 3px color-mix(in srgb, #ff9600 45%, transparent)' : undefined,
+                  background: d.done ? '#e68743' : 'var(--kb-key-bg)',
+                  boxShadow: d.isToday ? '0 0 0 3px color-mix(in srgb, #e68743 45%, transparent)' : undefined,
                   opacity: d.future ? 0.5 : 1,
                 }}
               >
@@ -93,7 +93,7 @@ export default function QuestsPage() {
           <Icon name="target" size={40} />
           <div className="flex-1">
             <div className="font-extrabold">Tagesziel</div>
-            <Bar pct={goalPct} label={`${xpEarnedToday} / ${dailyGoalXP} EP`} color="#ffc800" />
+            <Bar pct={goalPct} label={`${xpEarnedToday} / ${dailyGoalXP} EP`} color="#f0b45a" />
           </div>
         </div>
         <div className="grid grid-cols-4 gap-2">
@@ -110,10 +110,10 @@ export default function QuestsPage() {
                 onClick={() => setDailyGoal(g as number)}
                 className="btn-3d border-2 px-1 py-1.5 text-[11px]"
                 style={{
-                  background: active ? 'color-mix(in srgb, #1cb0f6 14%, var(--bg-elevated))' : 'var(--bg-elevated)',
-                  borderColor: active ? '#1cb0f6' : 'var(--border)',
-                  color: active ? '#1899d6' : 'var(--text-muted)',
-                  ['--btn-edge' as string]: active ? '#1cb0f6' : 'var(--border)',
+                  background: active ? 'color-mix(in srgb, #35c7b5 14%, var(--bg-elevated))' : 'var(--bg-elevated)',
+                  borderColor: active ? '#35c7b5' : 'var(--border)',
+                  color: active ? '#22a99c' : 'var(--text-muted)',
+                  ['--btn-edge' as string]: active ? '#35c7b5' : 'var(--border)',
                 }}
               >
                 <div className="text-sm">{g} EP</div>
@@ -134,11 +134,11 @@ export default function QuestsPage() {
               <Icon name={q.icon} size={44} />
               <div className="flex-1">
                 <div className="mb-1.5 font-extrabold">{q.title}</div>
-                <Bar pct={pct} label={`${Math.min(value, q.goal)} / ${q.goal}`} color={claimed ? '#58cc02' : '#ffc800'} />
+                <Bar pct={pct} label={`${Math.min(value, q.goal)} / ${q.goal}`} color={claimed ? '#2fb9a8' : '#f0b45a'} />
               </div>
               <div className="flex w-12 flex-col items-center">
                 <Icon name={claimed ? 'check' : 'chest'} size={34} muted={!claimed && pct < 100} />
-                <span className="flex items-center text-[11px] font-extrabold" style={{ color: '#1cb0f6' }}>
+                <span className="flex items-center text-[11px] font-extrabold" style={{ color: '#35c7b5' }}>
                   +{q.gemReward}
                   <Icon name="gem" size={12} />
                 </span>

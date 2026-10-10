@@ -26,8 +26,6 @@ export default function ProfilePage() {
   const leagueDivisionIndex = useStore((s) => s.leagueDivisionIndex)
   const soundEnabled = useStore((s) => s.soundEnabled)
   const toggleSound = useStore((s) => s.toggleSound)
-  const darkMode = useStore((s) => s.darkMode)
-  const toggleDarkMode = useStore((s) => s.toggleDarkMode)
   const resetProgress = useStore((s) => s.resetProgress)
   const setView = useStore((s) => s.setView)
   const startPractice = useStore((s) => s.startPractice)
@@ -39,7 +37,7 @@ export default function ProfilePage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       {/* header */}
-      <div className="relative mb-6 overflow-hidden rounded-3xl text-white" style={{ background: 'linear-gradient(135deg, #58cc02, #46a302)', boxShadow: '0 5px 0 #3a8a02' }}>
+      <div className="relative mb-6 overflow-hidden rounded-3xl text-white" style={{ background: 'linear-gradient(135deg, #2fb9a8, #168e83)', boxShadow: '0 5px 0 #0d7069' }}>
         <BannerPattern />
         <div className="relative flex flex-col items-center gap-4 px-6 py-6 sm:flex-row">
           <div className="rounded-full bg-white/20 p-2">
@@ -115,7 +113,6 @@ export default function ProfilePage() {
       <h2 className="mb-3 text-lg font-extrabold">Einstellungen</h2>
       <div className="tile flex flex-col divide-y-2" style={{ borderColor: 'var(--border)' }}>
         <SettingRow icon="sound" label="Soundeffekte" active={soundEnabled} onClick={toggleSound} />
-        <SettingRow icon="moon" label="Dark Mode" active={darkMode} onClick={toggleDarkMode} />
         <button onClick={() => setView('placement')} className="flex items-center gap-3 px-4 py-3 text-left font-bold" style={{ borderColor: 'var(--border)' }}>
           <Icon name="rocket" size={26} />
           <span className="flex-1">Einstufungstest erneut machen</span>
@@ -163,7 +160,7 @@ function SettingRow({ icon, label, active, onClick }: { icon: string; label: str
         aria-checked={active}
         aria-label={label}
         className="h-7 w-12 rounded-full p-0.5 transition-colors"
-        style={{ background: active ? '#58cc02' : 'var(--kb-key-bg)', boxShadow: 'inset 0 2px 0 rgba(0,0,0,.08)' }}
+        style={{ background: active ? '#2fb9a8' : 'var(--kb-key-bg)', boxShadow: 'inset 0 2px 0 rgba(0,0,0,.08)' }}
       >
         <span className="block h-6 w-6 rounded-full bg-white shadow transition-transform" style={{ transform: active ? 'translateX(20px)' : 'translateX(0)' }} />
       </button>
@@ -186,7 +183,7 @@ function ActivityCalendar({ log }: { log: SessionLogEntry[] }) {
     return { iso, xp: xpByDay.get(iso) ?? 0, future: d > today }
   })
   const activeDays = days.filter((d) => d.xp > 0).length
-  const color = (xp: number) => (xp === 0 ? 'var(--kb-key-bg)' : xp < 15 ? '#c6f0a0' : xp < 40 ? '#89e219' : xp < 80 ? '#58cc02' : '#3a8a02')
+  const color = (xp: number) => (xp === 0 ? 'var(--kb-key-bg)' : xp < 15 ? '#c6f0a0' : xp < 40 ? '#89e219' : xp < 80 ? '#2fb9a8' : '#0d7069')
   return (
     <div className="tile p-4">
       <div className="flex justify-center gap-[3px] overflow-x-auto pb-1 scrollbar-thin">
@@ -200,7 +197,7 @@ function ActivityCalendar({ log }: { log: SessionLogEntry[] }) {
                 key={d.iso}
                 title={`${new Date(d.iso).toLocaleDateString('de-DE')}: ${d.xp} EP`}
                 className="aspect-square w-full rounded-[4px]"
-                style={{ background: d.future ? 'transparent' : color(d.xp), outline: d.iso === todayISO() ? '2px solid #ff9600' : undefined }}
+                style={{ background: d.future ? 'transparent' : color(d.xp), outline: d.iso === todayISO() ? '2px solid #e68743' : undefined }}
               />
             ))}
           </div>
@@ -253,8 +250,8 @@ function WpmChart({ log }: { log: SessionLogEntry[] }) {
       <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label="Verlauf deiner Tippgeschwindigkeit">
         <defs>
           <linearGradient id="wpmfill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#1cb0f6" stopOpacity="0.35" />
-            <stop offset="1" stopColor="#1cb0f6" stopOpacity="0" />
+            <stop offset="0" stopColor="#35c7b5" stopOpacity="0.35" />
+            <stop offset="1" stopColor="#35c7b5" stopOpacity="0" />
           </linearGradient>
         </defs>
         {[0, 0.5, 1].map((f) => (
@@ -264,9 +261,9 @@ function WpmChart({ log }: { log: SessionLogEntry[] }) {
           </g>
         ))}
         <path d={area} fill="url(#wpmfill)" />
-        <path d={line} fill="none" stroke="#1cb0f6" strokeWidth="3.5" strokeLinejoin="round" strokeLinecap="round" />
+        <path d={line} fill="none" stroke="#35c7b5" strokeWidth="3.5" strokeLinejoin="round" strokeLinecap="round" />
         {pts.map((p, i) => (
-          <circle key={i} cx={x(i)} cy={y(p.wpm)} r={i === pts.length - 1 ? 6 : 3.5} fill={i === pts.length - 1 ? '#ff9600' : '#1cb0f6'} stroke="var(--bg-elevated)" strokeWidth="2">
+          <circle key={i} cx={x(i)} cy={y(p.wpm)} r={i === pts.length - 1 ? 6 : 3.5} fill={i === pts.length - 1 ? '#e68743' : '#35c7b5'} stroke="var(--bg-elevated)" strokeWidth="2">
             <title>{`${p.wpm} WPM · ${p.acc}%`}</title>
           </circle>
         ))}

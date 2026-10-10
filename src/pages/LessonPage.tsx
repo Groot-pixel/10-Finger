@@ -84,22 +84,22 @@ export default function LessonPage() {
         </h2>
 
         <div className="grid w-full max-w-md grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="WPM" value={result.wpm} icon="bolt" color="#ffc800" />
-          <Stat label="Genauigkeit" value={`${result.accuracy}%`} icon="target" color="#58cc02" />
-          <Stat label="Zeichen" value={result.charsTyped} icon="keyboard" color="#1cb0f6" />
-          <Stat label="Combo" value={result.maxCombo} icon="flame" color="#ff9600" />
+          <Stat label="WPM" value={result.wpm} icon="bolt" color="#f0b45a" />
+          <Stat label="Genauigkeit" value={`${result.accuracy}%`} icon="target" color="#2fb9a8" />
+          <Stat label="Zeichen" value={result.charsTyped} icon="keyboard" color="#35c7b5" />
+          <Stat label="Combo" value={result.maxCombo} icon="flame" color="#e68743" />
         </div>
 
         {session.kind !== 'placement' && (
           <div className="flex flex-wrap items-center justify-center gap-4 text-lg font-bold">
-            {reward.xpEarned > 0 && <span className="flex items-center gap-1" style={{ color: '#ce82ff' }}><Icon name="star" size={24} />+{reward.xpEarned} EP</span>}
-            {reward.gemsEarned > 0 && <span className="flex items-center gap-1" style={{ color: '#1cb0f6' }}><Icon name="gem" size={24} />+{reward.gemsEarned}</span>}
+            {reward.xpEarned > 0 && <span className="flex items-center gap-1" style={{ color: '#eda958' }}><Icon name="star" size={24} />+{reward.xpEarned} EP</span>}
+            {reward.gemsEarned > 0 && <span className="flex items-center gap-1" style={{ color: '#35c7b5' }}><Icon name="gem" size={24} />+{reward.gemsEarned}</span>}
             {reward.crownUp && <span className="flex items-center gap-1" style={{ color: '#e5a400' }}><Icon name="crown" size={24} />Krone verdient!</span>}
           </div>
         )}
         {session.kind === 'placement' && (
           <div className="flex gap-4 text-lg font-bold">
-            <span className="flex items-center gap-1" style={{ color: '#1cb0f6' }}><Icon name="gem" size={24} />+25 Willkommensbonus</span>
+            <span className="flex items-center gap-1" style={{ color: '#35c7b5' }}><Icon name="gem" size={24} />+25 Willkommensbonus</span>
           </div>
         )}
 
@@ -122,7 +122,7 @@ export default function LessonPage() {
           <button
             onClick={() => { cancelSession(); setView('path') }}
             className="btn-3d min-w-40 px-6 py-3 text-white"
-            style={{ background: '#58cc02', ['--btn-edge' as string]: '#46a302' }}
+            style={{ background: '#2fb9a8', ['--btn-edge' as string]: '#168e83' }}
           >
             {session.kind === 'placement' ? 'Zum Lernpfad' : 'Weiter'}
           </button>
@@ -130,7 +130,7 @@ export default function LessonPage() {
             <button
               onClick={() => { setResult(null); setReward(null) }}
               className="btn-3d min-w-40 border-2 px-6 py-3"
-              style={{ borderColor: 'var(--border)', color: '#1cb0f6', ['--btn-edge' as string]: 'var(--border)' }}
+              style={{ borderColor: 'var(--border)', color: '#35c7b5', ['--btn-edge' as string]: 'var(--border)' }}
             >
               Nochmal üben
             </button>

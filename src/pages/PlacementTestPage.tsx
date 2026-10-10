@@ -24,10 +24,10 @@ export default function PlacementTestPage() {
         frühere Lektionen nachholen.
       </p>
       <div className="flex gap-3">
-        <button onClick={begin} className="btn-3d px-6 py-3 text-white" style={{ background: '#58cc02', ['--btn-edge' as string]: '#46a302' }}>
+        <button onClick={begin} className="btn-3d px-6 py-3 text-white" style={{ background: '#2fb9a8', ['--btn-edge' as string]: '#168e83' }}>
           Test starten
         </button>
-        <button onClick={() => setView('path')} className="btn-3d border-2 px-6 py-3" style={{ borderColor: 'var(--border)', color: '#1cb0f6', ['--btn-edge' as string]: 'var(--border)' }}>
+        <button onClick={() => setView('path')} className="btn-3d border-2 px-6 py-3" style={{ borderColor: 'var(--border)', color: '#35c7b5', ['--btn-edge' as string]: 'var(--border)' }}>
           Abbrechen
         </button>
       </div>

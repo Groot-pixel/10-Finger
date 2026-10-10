@@ -26,7 +26,7 @@ export default function ShopPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <div className="relative mb-7 overflow-hidden rounded-3xl px-6 py-5 text-white" style={{ background: 'linear-gradient(135deg, #ff86d0, #e066b0)', boxShadow: '0 5px 0 #c04f96' }}>
+      <div className="relative mb-7 overflow-hidden rounded-3xl px-6 py-5 text-white" style={{ background: 'linear-gradient(135deg, #d99b5f, #b9733d)', boxShadow: '0 5px 0 #884b28' }}>
         <BannerPattern />
         <div className="relative flex items-center gap-4">
           <Mascot mood="love" size={88} accessories={equippedCosmetics} />
@@ -47,7 +47,7 @@ export default function ShopPage() {
             <div className="relative">
               <Icon name={item.icon} size={56} />
               {(stock[item.id] ?? 0) > 0 && (
-                <span className="absolute -bottom-1 -right-1 rounded-full px-1.5 text-[10px] font-black text-white" style={{ background: '#1cb0f6' }}>
+                <span className="absolute -bottom-1 -right-1 rounded-full px-1.5 text-[10px] font-black text-white" style={{ background: '#35c7b5' }}>
                   ×{stock[item.id]}
                 </span>
               )}
@@ -61,7 +61,7 @@ export default function ShopPage() {
         ))}
       </div>
 
-      <h2 className="mb-3 text-lg font-extrabold">Outfits für Flowy</h2>
+      <h2 className="mb-3 text-lg font-extrabold">Flowys Garderobe</h2>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {outfits.map((item) => {
           const owned = ownedItems.includes(item.id)
@@ -70,7 +70,7 @@ export default function ShopPage() {
             <div
               key={item.id}
               className="tile flex flex-col items-center gap-2 p-3 text-center"
-              style={{ borderColor: equipped ? '#58cc02' : undefined }}
+              style={{ borderColor: equipped ? '#2fb9a8' : undefined }}
             >
               <div className="flex h-24 w-full items-center justify-center rounded-xl" style={{ background: 'var(--kb-key-bg)' }}>
                 <Mascot mood="happy" size={84} accessories={[item.id]} />
@@ -81,10 +81,10 @@ export default function ShopPage() {
                   onClick={() => equipCosmetic(item.id)}
                   className="btn-3d w-full border-2 px-2 py-1.5 text-xs"
                   style={{
-                    background: equipped ? '#58cc02' : 'var(--bg-elevated)',
-                    borderColor: equipped ? '#58cc02' : 'var(--border)',
-                    color: equipped ? '#fff' : '#1cb0f6',
-                    ['--btn-edge' as string]: equipped ? '#46a302' : 'var(--border)',
+                    background: equipped ? '#2fb9a8' : 'var(--bg-elevated)',
+                    borderColor: equipped ? '#2fb9a8' : 'var(--border)',
+                    color: equipped ? '#fff' : '#35c7b5',
+                    ['--btn-edge' as string]: equipped ? '#168e83' : 'var(--border)',
                   }}
                 >
                   {equipped ? 'Angelegt' : 'Anlegen'}
@@ -106,7 +106,7 @@ function PriceButton({ price, disabled, onClick, full }: { price: number; disabl
       onClick={onClick}
       disabled={disabled}
       className={`btn-3d flex items-center justify-center gap-1 border-2 px-3 py-1.5 text-sm ${full ? 'w-full' : ''}`}
-      style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: '#1cb0f6', ['--btn-edge' as string]: 'var(--border)' }}
+      style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: '#35c7b5', ['--btn-edge' as string]: 'var(--border)' }}
     >
       <Icon name="gem" size={18} />
       {price}

@@ -28,9 +28,9 @@ export default function BottomNav() {
             onClick={() => setView(item.view)}
             className="flex flex-1 flex-col items-center gap-0.5 rounded-xl border-2 py-1 text-[10px] font-extrabold"
             style={{
-              color: active ? '#1899d6' : 'var(--text-muted)',
-              borderColor: active ? 'color-mix(in srgb, #1cb0f6 55%, transparent)' : 'transparent',
-              background: active ? 'color-mix(in srgb, #1cb0f6 12%, var(--bg-elevated))' : 'transparent',
+              color: active ? '#22a99c' : 'var(--text-muted)',
+              borderColor: active ? 'color-mix(in srgb, #35c7b5 55%, transparent)' : 'transparent',
+              background: active ? 'color-mix(in srgb, #35c7b5 12%, var(--bg-elevated))' : 'transparent',
             }}
           >
             <Icon name={item.icon} size={26} />

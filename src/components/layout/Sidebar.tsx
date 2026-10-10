@@ -5,7 +5,7 @@ import Mascot from '../Mascot'
 
 const ITEMS: { view: ViewKind; label: string; icon: string }[] = [
   { view: 'path', label: 'Lernpfad', icon: 'map' },
-  { view: 'practice', label: 'Practice Hub', icon: 'dumbbell' },
+  { view: 'practice', label: 'Übungsstube', icon: 'dumbbell' },
   { view: 'league', label: 'Liga', icon: 'trophy' },
   { view: 'quests', label: 'Tagesaufgaben', icon: 'quests' },
   { view: 'achievements', label: 'Erfolge', icon: 'medal' },
@@ -31,9 +31,9 @@ export default function Sidebar() {
             onClick={() => setView(item.view)}
             className="flex items-center gap-3.5 rounded-xl border-2 px-3 py-2.5 text-left text-[15px] font-extrabold uppercase tracking-wide transition-colors"
             style={{
-              background: active ? 'color-mix(in srgb, var(--blue, #1cb0f6) 12%, var(--bg-elevated))' : 'transparent',
-              borderColor: active ? 'color-mix(in srgb, #1cb0f6 55%, transparent)' : 'transparent',
-              color: active ? '#1899d6' : 'var(--text-muted)',
+              background: active ? 'color-mix(in srgb, var(--blue, #35c7b5) 12%, var(--bg-elevated))' : 'transparent',
+              borderColor: active ? 'color-mix(in srgb, #35c7b5 55%, transparent)' : 'transparent',
+              color: active ? '#22a99c' : 'var(--text-muted)',
             }}
           >
             <Icon name={item.icon} size={30} />

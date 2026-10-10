@@ -47,7 +47,7 @@ export default function LeaguePage() {
       {banner && (
         <div
           className="pop-in tile mb-6 flex items-center gap-3 p-4"
-          style={{ borderColor: banner.promoted ? '#58cc02' : '#ff4b4b' }}
+          style={{ borderColor: banner.promoted ? '#2fb9a8' : '#ff4b4b' }}
         >
           <Mascot mood={banner.promoted ? 'excited' : 'sad'} size={56} />
           <div className="flex-1">
@@ -74,10 +74,10 @@ export default function LeaguePage() {
       <div className="mb-1 text-center text-sm font-semibold" style={{ color: 'var(--text-muted)' }}>
         Die besten {PROMOTE_COUNT} steigen in die nächste Liga auf
       </div>
-      <div className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-full px-3 py-1 text-sm font-extrabold" style={{ background: 'var(--kb-key-bg)', color: '#ff9600' }}>
+      <div className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-full px-3 py-1 text-sm font-extrabold" style={{ background: 'var(--kb-key-bg)', color: '#e68743' }}>
         <Icon name="clock" size={18} /> noch {formatCountdown(weekStartISO)}
         <span className="ml-1 h-2 w-16 overflow-hidden rounded-full" style={{ background: 'var(--border)' }}>
-          <span className="block h-full rounded-full" style={{ width: `${Math.round(fraction * 100)}%`, background: '#ff9600' }} />
+          <span className="block h-full rounded-full" style={{ width: `${Math.round(fraction * 100)}%`, background: '#e68743' }} />
         </span>
       </div>
 
@@ -86,7 +86,7 @@ export default function LeaguePage() {
         {podium.map((e) => {
           const place = top3.indexOf(e) + 1
           const h = place === 1 ? 92 : place === 2 ? 68 : 52
-          const color = place === 1 ? '#ffc800' : place === 2 ? '#c4ccd4' : '#d08a4b'
+          const color = place === 1 ? '#f0b45a' : place === 2 ? '#c4ccd4' : '#d08a4b'
           return (
             <div key={e.name} className="flex w-28 flex-col items-center">
               {place === 1 && <Icon name="crown" size={28} />}
@@ -114,11 +114,11 @@ export default function LeaguePage() {
           const demoteLine = divisionIndex > 0 && rank === board.length - DEMOTE_COUNT + 1
           return (
             <li key={entry.name}>
-              {promoteLine && <ZoneLine color="#58cc02" icon="chevron" text="Aufstiegszone" up />}
+              {promoteLine && <ZoneLine color="#2fb9a8" icon="chevron" text="Aufstiegszone" up />}
               {demoteLine && <ZoneLine color="#ff4b4b" icon="chevron" text="Abstiegszone" />}
               <div
                 className="flex items-center gap-3 rounded-xl px-2 py-2"
-                style={{ background: entry.isPlayer ? 'color-mix(in srgb, #58cc02 14%, var(--bg-elevated))' : 'transparent' }}
+                style={{ background: entry.isPlayer ? 'color-mix(in srgb, #2fb9a8 14%, var(--bg-elevated))' : 'transparent' }}
               >
                 <span className="w-7 text-center text-sm font-black" style={{ color: rank <= 3 ? ['#e5a400', '#9aa5ad', '#b8733a'][rank - 1] : rank <= PROMOTE_COUNT ? '#58a700' : 'var(--text-muted)' }}>
                   {rank}

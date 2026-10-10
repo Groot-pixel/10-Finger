@@ -190,7 +190,7 @@ export default function PathPage() {
                   const p = points[li]
                   const big = lesson.type === 'checkpoint' || lesson.type === 'boss'
                   const size = big ? NODE + 10 : NODE
-                  const face = done ? '#ffc800' : unlocked ? unit.color : 'var(--kb-key-bg)'
+                  const face = done ? '#f0b45a' : unlocked ? unit.color : 'var(--kb-key-bg)'
                   const edge = done ? '#e5a400' : unlocked ? dark : 'var(--kb-key-shadow)'
                   return (
                     <div

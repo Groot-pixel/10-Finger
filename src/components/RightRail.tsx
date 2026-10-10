@@ -46,9 +46,9 @@ export default function RightRail() {
         <div className="relative flex h-14 w-14 items-center justify-center">
           <svg width="56" height="56" viewBox="0 0 56 56" className="absolute inset-0 -rotate-90" aria-hidden="true">
             <circle cx="28" cy="28" r="24" fill="none" stroke="var(--kb-key-bg)" strokeWidth="6" />
-            <circle cx="28" cy="28" r="24" fill="none" stroke="#ce82ff" strokeWidth="6" strokeLinecap="round" strokeDasharray={`${(levelPct / 100) * 150.8} 150.8`} />
+            <circle cx="28" cy="28" r="24" fill="none" stroke="#eda958" strokeWidth="6" strokeLinecap="round" strokeDasharray={`${(levelPct / 100) * 150.8} 150.8`} />
           </svg>
-          <span className="text-lg font-black" style={{ color: '#a568cc' }}>{level}</span>
+          <span className="text-lg font-black" style={{ color: '#c27a35' }}>{level}</span>
         </div>
         <div className="flex-1">
           <div className="font-extrabold">Level {level}</div>
@@ -79,13 +79,13 @@ export default function RightRail() {
       <button onClick={() => setView('quests')} className="tile tile-hover flex flex-col gap-3 p-4 text-left">
         <div className="flex items-center justify-between">
           <span className="font-extrabold">Tagesaufgaben</span>
-          <span className="text-xs font-extrabold uppercase tracking-wide" style={{ color: '#1cb0f6' }}>Alle zeigen</span>
+          <span className="text-xs font-extrabold uppercase tracking-wide" style={{ color: '#35c7b5' }}>Alle zeigen</span>
         </div>
         <div className="flex items-center gap-3">
           <Icon name="target" size={34} />
           <div className="flex-1">
             <div className="mb-1 text-sm font-bold">Tagesziel: {dailyGoalXP} EP</div>
-            <Bar pct={goalPct} label={`${xpEarnedToday} / ${dailyGoalXP}`} color="#ffc800" />
+            <Bar pct={goalPct} label={`${xpEarnedToday} / ${dailyGoalXP}`} color="#f0b45a" />
           </div>
         </div>
         {dailyQuests.map((q) => {
@@ -97,7 +97,7 @@ export default function RightRail() {
               <Icon name={claimed ? 'check' : q.icon} size={34} />
               <div className="flex-1">
                 <div className="mb-1 text-sm font-bold">{q.title}</div>
-                <Bar pct={pct} label={`${Math.min(value, q.goal)} / ${q.goal}`} color={claimed ? '#58cc02' : '#ffc800'} />
+                <Bar pct={pct} label={`${Math.min(value, q.goal)} / ${q.goal}`} color={claimed ? '#2fb9a8' : '#f0b45a'} />
               </div>
             </div>
           )

@@ -36,7 +36,7 @@ export default function AchievementsPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <div className="relative mb-6 overflow-hidden rounded-3xl px-6 py-5 text-white" style={{ background: 'linear-gradient(135deg, #ffc800, #ff9600)', boxShadow: '0 5px 0 #d97f00' }}>
+      <div className="relative mb-6 overflow-hidden rounded-3xl px-6 py-5 text-white" style={{ background: 'linear-gradient(135deg, #f0b45a, #e68743)', boxShadow: '0 5px 0 #d97f00' }}>
         <BannerPattern opacity={0.2} />
         <div className="relative flex items-center gap-4">
           <div className="flex-1">
@@ -62,7 +62,7 @@ export default function AchievementsPage() {
                 <span className="text-[17px] font-extrabold">{ach.title}</span>
                 <span className="flex gap-0.5" title={`Stufe ${level} von ${maxLevel}`}>
                   {Array.from({ length: maxLevel }, (_, i) => (
-                    <span key={i} className="h-2 w-4 rounded-full" style={{ background: i < level ? '#ffc800' : 'var(--kb-key-bg)' }} />
+                    <span key={i} className="h-2 w-4 rounded-full" style={{ background: i < level ? '#f0b45a' : 'var(--kb-key-bg)' }} />
                   ))}
                 </span>
               </div>
@@ -71,7 +71,7 @@ export default function AchievementsPage() {
               </div>
               <Bar
                 pct={pct}
-                color={next ? '#ffc800' : '#58cc02'}
+                color={next ? '#f0b45a' : '#2fb9a8'}
                 label={next ? `${value.toLocaleString('de-DE')} / ${next.threshold.toLocaleString('de-DE')}` : 'Geschafft'}
               />
             </div>

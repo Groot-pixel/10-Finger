@@ -80,7 +80,7 @@ export function AchievementBadge({ icon, level, size = 64 }: { icon: string; lev
 /* ------------------------------------------------------------------ */
 /* Little avatar for league players: initials on a colourful circle    */
 /* ------------------------------------------------------------------ */
-const AVATAR_COLORS = ['#ff4b4b', '#ff9600', '#ffc800', '#58cc02', '#1cb0f6', '#ce82ff', '#ff86d0', '#14b8a6', '#6366f1']
+const AVATAR_COLORS = ['#ff4b4b', '#e68743', '#f0b45a', '#2fb9a8', '#35c7b5', '#eda958', '#d99b5f', '#14b8a6', '#6366f1']
 
 export function Avatar({ name, size = 36 }: { name: string; size?: number }) {
   let h = 0

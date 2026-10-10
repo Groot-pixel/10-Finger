@@ -37,12 +37,12 @@ export default function PracticePage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <div className="relative mb-6 overflow-hidden rounded-3xl px-6 py-5 text-white" style={{ background: 'linear-gradient(135deg, #1cb0f6, #1899d6)', boxShadow: '0 5px 0 #1480b3' }}>
+      <div className="relative mb-6 overflow-hidden rounded-3xl px-6 py-5 text-white" style={{ background: 'linear-gradient(135deg, #35c7b5, #22a99c)', boxShadow: '0 5px 0 #177f78' }}>
         <BannerPattern />
         <div className="relative flex items-center gap-4">
           <div className="flex-1">
             <div className="text-[11px] font-extrabold uppercase tracking-widest opacity-80">Training</div>
-            <h1 className="text-2xl font-black">Practice Hub</h1>
+            <h1 className="text-2xl font-black">Übungsstube</h1>
             <p className="text-sm font-semibold opacity-90">Kostenloses Training – ganz ohne Druck, ganz ohne Grenzen.</p>
           </div>
           <Mascot mood="excited" size={84} />
@@ -72,10 +72,10 @@ export default function PracticePage() {
       </button>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Card icon="repeat" title="Zufällige Wiederholung" desc="Wiederhole eine bereits gelernte Lektion." onClick={practiceRandomReview} color="#ce82ff" />
+        <Card icon="repeat" title="Zufällige Wiederholung" desc="Wiederhole eine bereits gelernte Lektion." onClick={practiceRandomReview} color="#eda958" />
         <Card icon="stopwatch" title="Geschwindigkeitstest" desc="Wie viele Wörter pro Minute schaffst du?" onClick={speedTest} color="#ff4b4b" />
         <Card icon="abc" title="ABC-Durchlauf" desc="Das ganze Alphabet einmal durch – a bis ß, dann Großbuchstaben." onClick={() => startPractice(ABC_TEXT)} color="#6366f1" />
-        <Card icon="keyboard" title="Freies Tippen" desc="Ein zufälliger Übungstext mit deinem aktuellen Wortschatz." onClick={practiceRandomReview} color="#58cc02" />
+        <Card icon="keyboard" title="Freies Tippen" desc="Ein zufälliger Übungstext mit deinem aktuellen Wortschatz." onClick={practiceRandomReview} color="#2fb9a8" />
       </div>
 
       <h2 className="mb-1 mt-9 flex items-center gap-2 text-lg font-extrabold">

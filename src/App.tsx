@@ -16,13 +16,13 @@ import QuestsPage from './pages/QuestsPage'
 
 function App() {
   const view = useStore((s) => s.view)
-  const darkMode = useStore((s) => s.darkMode)
   const ensureDaily = useStore((s) => s.ensureDaily)
   const ensureLeagueWeek = useStore((s) => s.ensureLeagueWeek)
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light')
-  }, [darkMode])
+    // the warm plush design is made for the dark theme only
+    document.documentElement.setAttribute('data-theme', 'dark')
+  }, [])
 
   useEffect(() => {
     ensureDaily()

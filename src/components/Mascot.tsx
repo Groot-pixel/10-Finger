@@ -45,21 +45,21 @@ export default function Mascot({ mood = 'happy', size = 96, accessories = [], cl
           <path key={x} d={`M${x - 2.3} ${EYE_Y} Q${x} ${EYE_Y + 1.9} ${x + 2.3} ${EYE_Y}`} stroke={INK} strokeWidth="1.1" fill="none" strokeLinecap="round" />
         ))
       default: {
-        const r = mood === 'excited' ? 2.3 : 2.05
-        const look = mood === 'sad' ? 0.5 : 0
+        const r = mood === 'excited' ? 2.45 : 2.15
+        const look = mood === 'sad' ? 0.55 : 0
         return EYES.map((x, i) => (
           <g key={x}>
             {/* safety eye like on the toy: light rim, glossy black bead, big catch-light */}
-            <ellipse cx={x} cy={EYE_Y + 0.55} rx={r + 0.75} ry={r + 0.55} fill="#7a5a32" opacity="0.22" filter={`url(#${id}blur)`} />
-            <circle cx={x} cy={EYE_Y} r={r + 0.45} fill="#efe7d6" />
+            <ellipse cx={x} cy={EYE_Y + 0.55 + look} rx={r + 1.15} ry={r + 0.95} fill="#6b4226" opacity="0.24" filter={`url(#${id}blur)`} />
+            <circle cx={x} cy={EYE_Y + look} r={r + 0.72} fill="#fff8e9" stroke="#d7b98c" strokeWidth="0.42" />
             <circle cx={x} cy={EYE_Y + look} r={r} fill={`url(#${id}eye)`} />
-            <ellipse cx={x - r * 0.3} cy={EYE_Y + look - r * 0.38} rx={r * 0.36} ry={r * 0.3} fill="#fff" />
-            <circle cx={x + r * 0.4} cy={EYE_Y + look + r * 0.38} r={r * 0.14} fill="#fff" opacity="0.8" />
+            <ellipse cx={x - r * 0.34} cy={EYE_Y + look - r * 0.4} rx={r * 0.4} ry={r * 0.34} fill="#fff" />
+            <circle cx={x + r * 0.42} cy={EYE_Y + look + r * 0.4} r={r * 0.13} fill="#8ef0e1" opacity="0.9" />
             {mood === 'sad' && (
               <path
-                d={i === 0 ? `M${x - 2.4} ${EYE_Y - 3.3} Q${x} ${EYE_Y - 4.6} ${x + 2} ${EYE_Y - 4.4}` : `M${x - 2} ${EYE_Y - 4.4} Q${x} ${EYE_Y - 4.6} ${x + 2.4} ${EYE_Y - 3.3}`}
-                stroke="#9a6a35"
-                strokeWidth="0.8"
+                d={i === 0 ? `M${x - 2.6} ${EYE_Y - 3.5} Q${x} ${EYE_Y - 4.8} ${x + 2.1} ${EYE_Y - 4.45}` : `M${x - 2.1} ${EYE_Y - 4.45} Q${x} ${EYE_Y - 4.8} ${x + 2.6} ${EYE_Y - 3.5}`}
+                stroke="#815731"
+                strokeWidth="0.9"
                 fill="none"
                 strokeLinecap="round"
               />
@@ -91,9 +91,10 @@ export default function Mascot({ mood = 'happy', size = 96, accessories = [], cl
       default:
         // the wide embroidered smile along the bottom of the snout
         return (
-          <g fill="none" strokeLinecap="round">
-            <path d={`M${lx} ${ly + 0.35} Q50 ${MOUTH.mid + 2.3} ${rx} ${ry + 0.35}`} stroke="#8a6a40" strokeWidth="1.1" opacity="0.25" />
-            <path d={`M${lx} ${ly} Q50 ${MOUTH.mid + 1.9} ${rx} ${ry}`} stroke={RED} strokeWidth="0.95" />
+          <g strokeLinecap="round">
+            <path d={`M${lx + 0.6} ${ly - 0.1} Q50 ${MOUTH.mid + 4.9} ${rx - 0.6} ${ry - 0.1} Q50 ${MOUTH.mid + 2.15} ${lx + 0.6} ${ly - 0.1} Z`} fill="#5a2924" stroke="#7b3c32" strokeWidth="0.55" />
+            <path d={`M45.5 ${MOUTH.mid + 2.7} Q50 ${MOUTH.mid + 4.5} 54.5 ${MOUTH.mid + 2.7}`} stroke="#f58b8b" strokeWidth="1.2" fill="none" />
+            <path d={`M${lx + 1.2} ${ly - 0.35} Q50 ${MOUTH.mid + 1.8} ${rx - 1.2} ${ry - 0.35}`} stroke="#fff5e5" strokeWidth="0.6" fill="none" opacity="0.75" />
           </g>
         )
     }
@@ -132,7 +133,7 @@ export default function Mascot({ mood = 'happy', size = 96, accessories = [], cl
       {mouth()}
 
       {/* ---- accessories: 3D renders that sit exactly on the plush ---- */}
-      {['mascot-bandana', 'mascot-cap', 'mascot-crown', 'mascot-sunglasses']
+      {['mascot-bandana', 'mascot-bow', 'mascot-leafbadge', 'mascot-cap', 'mascot-crown', 'mascot-explorer', 'mascot-headphones', 'mascot-sunglasses']
         .filter((a) => has(a) && MASCOT_ACCESSORY[a])
         .map((a) => (
           <image key={a} href={MASCOT_ACCESSORY[a]} x="0" y="0" width="100" height="100" preserveAspectRatio="none" />

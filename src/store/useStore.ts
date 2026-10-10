@@ -176,7 +176,7 @@ export const useStore = create<State>()(
 
       ownedItems: [],
       equippedCosmetics: [],
-      darkMode: typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches,
+      darkMode: true,
       soundEnabled: true,
 
       view: 'path',

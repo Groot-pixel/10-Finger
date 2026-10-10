@@ -137,7 +137,7 @@ export default function TypingArea({ text, onFinish, onAbort }: Props) {
           <Icon name="close" size={22} />
         </button>
         <div className="h-4 flex-1 overflow-hidden rounded-full" style={{ background: 'var(--kb-key-bg)' }}>
-          <div className="h-full rounded-full transition-all duration-200" style={{ width: `${progressPct}%`, background: '#58cc02' }}>
+          <div className="h-full rounded-full transition-all duration-200" style={{ width: `${progressPct}%`, background: '#2fb9a8' }}>
             <div className="mx-2 mt-[3px] h-1 rounded-full bg-white/40" />
           </div>
         </div>
