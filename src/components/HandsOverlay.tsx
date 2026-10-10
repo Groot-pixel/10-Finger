@@ -121,10 +121,10 @@ const BORROW: Record<HandSide, Partial<Record<HandPart, [HandPart, number]>>> = 
  * keep sharing one contour line there and only part slightly at the fingertips, like in the drawing.
  */
 const SLIM_R: Partial<Record<HandPart, { top: Point; root: Point; n: number }>> = {
-  index: { top: { x: 742, y: 254 }, root: { x: 765, y: 551 }, n: 0.84 },
-  middle: { top: { x: 817, y: 245 }, root: { x: 861, y: 519 }, n: 0.82 },
-  ring: { top: { x: 895, y: 252 }, root: { x: 944, y: 501 }, n: 0.84 },
-  pinky: { top: { x: 970, y: 265 }, root: { x: 1015, y: 509 }, n: 0.9 },
+  index: { top: { x: 742, y: 254 }, root: { x: 765, y: 551 }, n: 0.77 },
+  middle: { top: { x: 817, y: 245 }, root: { x: 861, y: 519 }, n: 0.75 },
+  ring: { top: { x: 895, y: 252 }, root: { x: 944, y: 501 }, n: 0.77 },
+  pinky: { top: { x: 970, y: 265 }, root: { x: 1015, y: 509 }, n: 0.83 },
 }
 const SLIM: Record<HandSide, Partial<Record<HandPart, { top: Point; root: Point; n: number }>>> = {
   R: SLIM_R,
@@ -142,7 +142,7 @@ function slim(pts: Pts, hand: HandSide, part: HandPart): Pts {
     const px = pts[i] - s.root.x
     const py = pts[i + 1] - s.root.y
     const t = (px * ax + py * ay) / L2
-    const u = Math.min(1, Math.max(0, (t - 0.6) / 0.4))
+    const u = Math.min(1, Math.max(0, (t - 0.5) / 0.45))
     const k = (1 - s.n) * u * u * (3 - 2 * u)
     // pull the point towards the centre line by k
     out[i] = pts[i] - k * (px - t * ax)
