@@ -135,7 +135,7 @@ export default function PathPage() {
           const points = unit.lessons.map((_, li) => ({ x: (flip ? -1 : 1) * OFFSETS[li % OFFSETS.length], y: li * ROW + NODE / 2 + 62 }))
           const height = unit.lessons.length * ROW + 50
           return (
-            <section key={unit.id} className="mb-12">
+            <section key={unit.id} className="unit-section mb-12">
               {/* unit banner */}
               <div
                 className="relative mb-4 overflow-hidden rounded-2xl px-5 py-4 text-white"
