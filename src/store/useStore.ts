@@ -18,14 +18,35 @@ function dayDiff(aISO: string, bISO: string): number {
   return Math.round((b - a) / (24 * 60 * 60 * 1000))
 }
 
-/** one finished lesson / practice session, used for the activity calendar and the progress chart */
+/** one finished lesson / practice session – the basis for the statistics page */
 export interface SessionLogEntry {
-  /** local date YYYY-MM-DD */
+  /** date YYYY-MM-DD */
   d: string
   xp: number
+  /** words per minute */
   wpm: number
+  /** accuracy in percent */
   acc: number
+  /* fields below were added later – older entries may not have them */
+  /** finish time (ms since 1970) */
+  t?: number
+  /** what was practised: path | practice | speedtest | placement */
+  k?: string
+  /** title, e.g. the lesson name */
+  n?: string
+  /** characters typed */
+  c?: number
+  /** mistakes */
+  m?: number
+  /** duration in seconds */
+  s?: number
+  /** mistakes per key */
+  e?: Record<string, number>
 }
+
+/** keep this many sessions for the statistics (each entry is tiny) */
+export const SESSION_LOG_LIMIT = 3000
+
 
 interface State {
   // profile
@@ -122,6 +143,8 @@ interface State {
   dismissLeagueBanner: () => void
   resetProgress: () => void
   applyPlacement: (skipToUnitIndex: number) => void
+  /** stores a result that does not go through completeLesson (placement test) */
+  logSession: (entry: SessionLogEntry) => void
 }
 
 function computeXpForResult(r: LessonResult, xpBoostActive: boolean): number {
@@ -422,7 +445,22 @@ export const useStore = create<State>()(
           bestComboToday: Math.max(s.bestComboToday, result.maxCombo),
           leagueWeeklyXP: s.leagueWeeklyXP + xpEarned,
           xpBoostLessonsLeft: Math.max(0, s.xpBoostLessonsLeft - (result.isPractice ? 0 : 1)),
-          sessionLog: [...(s.sessionLog ?? []), { d: today, xp: xpEarned, wpm: result.wpm, acc: result.accuracy }].slice(-200),
+          sessionLog: [
+            ...(s.sessionLog ?? []),
+            {
+              d: today,
+              xp: xpEarned,
+              wpm: result.wpm,
+              acc: result.accuracy,
+              t: Date.now(),
+              k: s.activeSession?.kind ?? 'practice',
+              n: s.activeSession?.lessonId ? lessonById(s.activeSession.lessonId)?.lesson.title : undefined,
+              c: result.charsTyped,
+              m: result.mistakeCount,
+              s: Math.round(result.durationSec),
+              e: Object.keys(result.errorsByChar).length ? result.errorsByChar : undefined,
+            },
+          ].slice(-SESSION_LOG_LIMIT),
         }
         set(nextState)
 
@@ -489,6 +527,8 @@ export const useStore = create<State>()(
 
         return { xpEarned, gemsEarned: gemsEarned + gemBonus + questGemBonus, crownUp, precisionHearts }
       },
+
+      logSession: (entry) => set((s) => ({ sessionLog: [...(s.sessionLog ?? []), entry].slice(-SESSION_LOG_LIMIT) })),
 
       applyPlacement: (skipToUnitIndex) => {
         const progressMap = { ...get().lessonProgress }

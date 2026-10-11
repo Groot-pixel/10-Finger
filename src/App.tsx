@@ -13,6 +13,7 @@ import ShopPage from './pages/ShopPage'
 import ProfilePage from './pages/ProfilePage'
 import PlacementTestPage from './pages/PlacementTestPage'
 import QuestsPage from './pages/QuestsPage'
+import StatsPage from './pages/StatsPage'
 
 function App() {
   const view = useStore((s) => s.view)
@@ -44,6 +45,7 @@ function App() {
           {view === 'profile' && <ProfilePage />}
           {view === 'placement' && <PlacementTestPage />}
           {view === 'quests' && <QuestsPage />}
+          {view === 'stats' && <StatsPage />}
         </main>
         {view !== 'lesson' && <BottomNav />}
       </div>

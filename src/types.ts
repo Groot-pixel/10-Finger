@@ -26,7 +26,7 @@ export interface LessonResult {
 
 export type ViewKind =
   | 'path' | 'lesson' | 'practice' | 'league' | 'achievements'
-  | 'shop' | 'profile' | 'placement' | 'quests'
+  | 'shop' | 'profile' | 'placement' | 'quests' | 'stats'
 
 export interface ActiveSession {
   kind: 'path' | 'practice' | 'speedtest' | 'placement'

@@ -8,6 +8,7 @@ const ITEMS: { view: ViewKind; label: string; icon: string }[] = [
   { view: 'practice', label: 'Übungsstube', icon: 'dumbbell' },
   { view: 'league', label: 'Liga', icon: 'trophy' },
   { view: 'quests', label: 'Tagesaufgaben', icon: 'quests' },
+  { view: 'stats', label: 'Statistik', icon: 'chart' },
   { view: 'achievements', label: 'Erfolge', icon: 'medal' },
   { view: 'shop', label: 'Shop', icon: 'shop' },
   { view: 'profile', label: 'Profil', icon: 'profile' },

@@ -3,7 +3,7 @@ import TypingArea from '../components/TypingArea'
 import Mascot from '../components/Mascot'
 import Icon from '../components/Icon'
 import Confetti from '../components/Confetti'
-import { useStore, unlockedKeysForPlayer } from '../store/useStore'
+import { useStore, unlockedKeysForPlayer, todayISO } from '../store/useStore'
 import { generateLessonText, generateWeakKeyPractice } from '../engine/textGenerator'
 import { lessonById } from '../data/curriculum'
 import type { LessonResult } from '../types'
@@ -23,6 +23,7 @@ export default function LessonPage() {
   const setView = useStore((s) => s.setView)
   const lessonProgress = useStore((s) => s.lessonProgress)
   const startPractice = useStore((s) => s.startPractice)
+  const logSession = useStore((s) => s.logSession)
 
   const [result, setResult] = useState<LessonResult | null>(null)
   const [reward, setReward] = useState<{ xpEarned: number; gemsEarned: number; crownUp: boolean; precisionHearts: number } | null>(null)
@@ -66,6 +67,11 @@ export default function LessonPage() {
     const full: LessonResult = { ...partial, lessonId: session.lessonId ?? session.kind }
 
     if (session.kind === 'placement') {
+      logSession({
+        d: todayISO(), xp: 0, wpm: partial.wpm, acc: partial.accuracy, t: Date.now(), k: 'placement', n: 'Einstufungstest',
+        c: partial.charsTyped, m: partial.mistakeCount, s: Math.round(partial.durationSec),
+        e: Object.keys(partial.errorsByChar).length ? partial.errorsByChar : undefined,
+      })
       // score-based unit suggestion
       let suggestedUnit = 0
       if (partial.wpm >= 15 || partial.accuracy >= 80) suggestedUnit = 1

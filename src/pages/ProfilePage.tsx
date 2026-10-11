@@ -146,6 +146,11 @@ export default function ProfilePage() {
 
       <h2 className="mb-3 mt-8 flex items-center gap-2 text-lg font-extrabold"><Icon name="chart" size={24} /> Dein Tempo</h2>
       <WpmChart log={sessionLog} />
+      <button onClick={() => setView('stats')} className="tile tile-hover mt-3 flex w-full items-center gap-3 p-3 text-left font-bold">
+        <Icon name="chart" size={26} />
+        <span className="flex-1">Ausführliche Statistik: Schnelligkeit, Genauigkeit, Fehlerquote</span>
+        <Icon name="chevron" size={18} className="opacity-40" />
+      </button>
 
       <h2 className="mb-3 mt-8 flex items-center gap-2 text-lg font-extrabold"><Icon name="keyboard" size={24} /> Tasten-Heatmap</h2>
       <KeyHeatmap keyStats={keyStats} />
